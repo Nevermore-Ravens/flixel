@@ -14,8 +14,7 @@ import flixel.util.FlxSignal.FlxTypedSignal;
 @:autoBuild(flixel.system.macros.FlxMacroUtil.deprecateOverride("switchTo", "switchTo is deprecated, use startOutro"))
 #end
 // show deprecation warning when `switchTo` is overriden in dereived classes
-class FlxState extends FlxGroup
-{
+class FlxState extends FlxGroup {
 	/**
 	 * Determines whether or not this state is updated even when it is not the active state.
 	 * For example, if you have your game state first, and then you push a menu state on top of it,
@@ -83,7 +82,7 @@ class FlxState extends FlxGroup
 
 	@:noCompletion
 	var _subStateClosed:FlxTypedSignal<FlxSubState->Void>;
-    
+
 	/**
 	 * This function is called after the game engine successfully switches states.
 	 * Override this function, NOT the constructor, to initialize or set up your game state.
@@ -92,34 +91,37 @@ class FlxState extends FlxGroup
 	 */
 	public function create():Void {}
 
-	override public function draw():Void
-	{
-		if (persistentDraw || subState == null)
-			super.draw();
+	function superDraw() {
+		@:privateAccess
+		final oldDefaultCameras = FlxCamera._defaultCameras;
 
-		if (subState != null)
-			subState.draw();
+		if (cameras != null) {
+			@:privateAccess
+			FlxCamera._defaultCameras = cameras;
+		}
+
+		var basic = null;
+		for (i in 0...members.length) {
+			basic = members[i];
+			if (basic == null || !basic.exists || !basic.visible) continue;
+			basic.draw();
+		}
+
+		@:privateAccess
+		FlxCamera._defaultCameras = oldDefaultCameras;
 	}
 
-	@:allow(flixel.FlxGame)
-	function tryUpdate(elapsed:Float):Void
-	{
-		if (persistentUpdate || subState == null)
-			update(elapsed);
+	override function draw():Void {
+		if (subState == null) {
+			superDraw();
+			return;
+		}
 
-		if (_requestSubStateReset)
-		{
-			_requestSubStateReset = false;
-			resetSubState();
-		}
-		if (subState != null)
-		{
-			subState.tryUpdate(elapsed);
-		}
+		if (persistentDraw) superDraw();
+		if (subState.visible) subState.draw();
 	}
 
-	public function openSubState(SubState:FlxSubState):Void
-	{
+	public function openSubState(SubState:FlxSubState):Void {
 		_requestSubStateReset = true;
 		_requestedSubState = SubState;
 	}
@@ -127,21 +129,17 @@ class FlxState extends FlxGroup
 	/**
 	 * Closes the substate of this state, if one exists.
 	 */
-	public function closeSubState():Void
-	{
+	public function closeSubState():Void {
 		_requestSubStateReset = true;
 	}
 
 	/**
 	 * Load substate for this state
 	 */
-	public function resetSubState():Void
-	{
+	public function resetSubState():Void {
 		// Close the old state (if there is an old state)
-		if (subState != null)
-		{
-			if (subState.closeCallback != null)
-				subState.closeCallback();
+		if (subState != null) {
+			subState.closeCallback();
 			if (_subStateClosed != null)
 				_subStateClosed.dispatch(subState);
 
@@ -153,33 +151,28 @@ class FlxState extends FlxGroup
 		subState = _requestedSubState;
 		_requestedSubState = null;
 
-		if (subState != null)
-		{
+		if (subState != null) {
 			// Reset the input so things like "justPressed" won't interfere
 			if (!persistentUpdate)
 				FlxG.inputs.onStateSwitch();
 
-			subState._parentState = this;
+			subState.parent = this;
 
-			if (!subState._created)
-			{
+			if (!subState._created) {
 				subState._created = true;
 				subState.create();
 			}
-			if (subState.openCallback != null)
-				subState.openCallback();
+			subState.openCallback();
 			if (_subStateOpened != null)
 				_subStateOpened.dispatch(subState);
 		}
 	}
 
-	override public function destroy():Void
-	{
+	override function destroy():Void {
 		FlxDestroyUtil.destroy(_subStateOpened);
 		FlxDestroyUtil.destroy(_subStateClosed);
-        
-		if (subState != null)
-		{
+
+		if (subState != null) {
 			subState.destroy();
 			subState = null;
 		}
@@ -193,22 +186,20 @@ class FlxState extends FlxGroup
 	 * Useful for customizing state switches, e.g. for transition effects.
 	 */
 	@:deprecated("switchTo is deprecated, use startOutro")
-	public function switchTo(nextState:FlxState):Bool
-	{
+	public function switchTo(nextState:FlxState):Bool {
 		return true;
 	}
-	
+
 	/**
 	 * Called from `FlxG.switchState()`, when `onOutroComplete` is called, the actual state
 	 * switching will happen.
-	 * 
+	 *
 	 * Note: Calling `super.startOutro(onOutroComplete)` will call `onOutroComplete`.
-	 * 
+	 *
 	 * @param   onOutroComplete  Called when the outro is complete.
 	 * @since 5.3.0
 	 */
-	public function startOutro(onOutroComplete:()->Void)
-	{
+	public function startOutro(onOutroComplete:() -> Void) {
 		onOutroComplete();
 	}
 
@@ -232,32 +223,40 @@ class FlxState extends FlxGroup
 	 */
 	public function onResize(Width:Int, Height:Int):Void {}
 
+	@:allow(flixel.FlxGame)
+	function tryUpdate(elapsed:Float):Void {
+		if (persistentUpdate || subState == null) update(elapsed);
+
+		if (_requestSubStateReset) {
+			_requestSubStateReset = false;
+			resetSubState();
+		}
+
+		if (subState != null) subState.tryUpdate(elapsed);
+	}
+
 	@:noCompletion
-	function get_bgColor():FlxColor
-	{
+	function get_bgColor():FlxColor {
 		return FlxG.cameras.bgColor;
 	}
 
 	@:noCompletion
-	function set_bgColor(Value:FlxColor):FlxColor
-	{
+	function set_bgColor(Value:FlxColor):FlxColor {
 		return FlxG.cameras.bgColor = Value;
 	}
-    
+
 	@:noCompletion
-	function get_subStateOpened():FlxTypedSignal<FlxSubState->Void>
-	{
+	function get_subStateOpened():FlxTypedSignal<FlxSubState -> Void> {
 		if (_subStateOpened == null)
-			_subStateOpened = new FlxTypedSignal<FlxSubState->Void>();
+			_subStateOpened = new FlxTypedSignal<FlxSubState -> Void>();
 
 		return _subStateOpened;
 	}
 
 	@:noCompletion
-	function get_subStateClosed():FlxTypedSignal<FlxSubState->Void>
-	{
+	function get_subStateClosed():FlxTypedSignal<FlxSubState -> Void> {
 		if (_subStateClosed == null)
-			_subStateClosed = new FlxTypedSignal<FlxSubState->Void>();
+			_subStateClosed = new FlxTypedSignal<FlxSubState -> Void>();
 
 		return _subStateClosed;
 	}

@@ -26,15 +26,6 @@ import openfl.geom.Rectangle;
 using flixel.util.FlxColorTransformUtil;
 
 /**
- * The core building blocks of all Vortex games. With helpful tools for animation, movement and
- * features for the needs of most games.
- * 
- * It is pretty common place to extend `Sprite` for your own game's needs; for example a `SpaceShip`
- * class may extend `Sprite` but could have additional variables for the game like `shieldStrength`
- * or `shieldPower`.
- */
-
-/**
  * The core building blocks of all Flixel games. With helpful tools for animation, movement and
  * features for the needs of most games.
  * 
@@ -142,7 +133,7 @@ class FlxSprite extends FlxObject
 	 * defaults to `false`.
 	 * @since 5.0.0
 	 */
-	public static var defaultAntialiasing:Bool = false;
+	public static var defaultAntialiasing:Bool = true;
 	
 	/**
 	 * Class that handles adding and playing animations on this sprite.
@@ -288,6 +279,11 @@ class FlxSprite extends FlxObject
 	public var clipRect(default, set):FlxRect;
 
 	/**
+     * How the graphic behaves when the coordinates bypass the edge of the image.
+     */
+    public var wrapMode:openfl.display3D.Context3DWrapMode;
+
+	/**
 	 * GLSL shader for this sprite. Only works with OpenFL Next or WebGL.
 	 * Avoid changing it frequently as this is a costly operation.
 	 * @since 4.1.0
@@ -397,6 +393,7 @@ class FlxSprite extends FlxObject
 	{
 		super.initVars();
 
+		wrapMode = CLAMP;
 		animation = new FlxAnimationController(this);
 
 		_flashPoint = new Point();
@@ -434,6 +431,7 @@ class FlxSprite extends FlxObject
 		_halfSize = FlxDestroyUtil.put(_halfSize);
 		_scaledOrigin = FlxDestroyUtil.put(_scaledOrigin);
 
+		wrapMode = null;
 		framePixels = FlxDestroyUtil.dispose(framePixels);
 
 		_flashPoint = null;
@@ -655,6 +653,19 @@ class FlxSprite extends FlxObject
 		return this;
 	}
 
+    /**
+     * Clips the graphic to the specific region.
+     *
+     * NOTE: This is will not work as expected when using animated/tile sprites.
+     */
+    public function clipGraphic(x:Float, y:Float, width:Float, height:Float) {
+        if (_frame == null) return;
+
+        _frame.frame.set(x, y, width, height);
+        frameWidth = Math.ceil(width); // these are for screen boundries
+        frameHeight = Math.ceil(height);
+    }
+
 	/**
 	 * Called whenever a new graphic is loaded for this sprite (after `loadGraphic()`, `makeGraphic()` etc).
 	 */
@@ -765,9 +776,18 @@ class FlxSprite extends FlxObject
 		}
 	}
 
-	override public function update(elapsed:Float):Void
-	{
-		super.update(elapsed);
+	override public function update(elapsed:Float):Void {
+		last.set(x, y);
+
+		if (path != null && path.active)
+			path.update(elapsed);
+
+		if (moves)
+			updateMotion(elapsed);
+
+		wasTouching = touching;
+		touching = FlxDirectionFlags.NONE;
+
 		updateAnimation(elapsed);
 	}
 
@@ -828,7 +848,7 @@ class FlxSprite extends FlxObject
 			_point.floor();
 
 		_point.copyToFlash(_flashPoint);
-		camera.copyPixels(_frame, framePixels, _flashRect, _flashPoint, colorTransform, blend, antialiasing);
+		camera.copyPixels(_frame, framePixels, _flashRect, _flashPoint, colorTransform, blend, antialiasing, wrapMode);
 	}
 
 	@:noCompletion
@@ -856,7 +876,7 @@ class FlxSprite extends FlxObject
 			_matrix.ty = Math.floor(_matrix.ty);
 		}
 
-		camera.drawPixels(_frame, framePixels, _matrix, colorTransform, blend, antialiasing, shader);
+		camera.drawPixels(_frame, framePixels, _matrix, colorTransform, blend, antialiasing, shader, wrapMode);
 	}
 
 	/**

@@ -259,9 +259,7 @@ class FlxGame extends Sprite
 	 *
 	 * @see [scale modes](https://api.haxeflixel.com/flixel/system/scaleModes/index.html)
 	 */
-	public function new(gameWidth = 0, gameHeight = 0, ?initialState:Class<FlxState>, updateFramerate = 60, drawFramerate = 60, skipSplash = false,
-			startFullscreen = false)
-	{
+	public function new(initialState:Class<FlxState>, ?gameWidth:Int = 0, ?gameHeight:Int = 0, ?framerate = 60, ?skipSplash = false, ?startFullscreen = false) {
 		super();
 
 		#if desktop
@@ -279,8 +277,8 @@ class FlxGame extends Sprite
 		// Basic display and update setup stuff
 		FlxG.init(this, gameWidth, gameHeight);
 
-		FlxG.updateFramerate = updateFramerate;
-		FlxG.drawFramerate = drawFramerate;
+		FlxG.updateFramerate = framerate;
+		FlxG.drawFramerate = framerate;
 		_accumulator = _stepMS;
 		_skipSplash = skipSplash;
 
@@ -380,13 +378,7 @@ class FlxGame extends Sprite
 		Assets.addEventListener(Event.CHANGE, FlxG.bitmap.onAssetsReload);
 	}
 
-	function onFocus(_):Void
-	{
-		#if flash
-		if (!_lostFocus)
-			return; // Don't run this function twice (bug in standalone flash player)
-		#end
-
+	function onFocus(_):Void {
 		#if (desktop && lime_legacy)
 		// make sure the on focus event doesn't fire on startup
 		if (!_onFocusFiredOnce)
@@ -431,11 +423,6 @@ class FlxGame extends Sprite
 			return;
 		#end
 
-		#if flash
-		if (_lostFocus)
-			return; // Don't run this function twice (bug in standalone flash player)
-		#end
-
 		_lostFocus = true;
 		FlxG.signals.focusLost.dispatch();
 		_state.onFocusLost();
@@ -460,15 +447,12 @@ class FlxGame extends Sprite
 	}
 
 	@:allow(flixel.FlxG)
-	function onResize(_):Void
-	{
+	function onResize(_):Void {
 		var width:Int = FlxG.stage.stageWidth;
 		var height:Int = FlxG.stage.stageHeight;
 
-		#if !flash
 		if (FlxG.renderTile)
 			FlxG.bitmap.onContext();
-		#end
 
 		resizeGame(width, height);
 	}

@@ -1,112 +1,47 @@
 package flixel;
 
-import flixel.system.FlxBGSprite;
-import flixel.util.FlxColor;
-import flixel.util.FlxDestroyUtil;
+class FlxSubState extends flixel.group.FlxGroup {
+	public var parent:FlxState;
 
-/**
- * A `FlxSubState` can be opened inside of a `FlxState`.
- * By default, it also stops the parent state from updating,
- * making it convenient for pause screens or menus.
- * 
- * @see [FlxSubstate snippet](https://snippets.haxeflixel.com/states/flxsubstate/)
- * @see [Substate demo](https://haxeflixel.com/demos/SubState/)
- */
-class FlxSubState extends FlxState
-{
-	/**
-	 * Callback method for state open/resume event.
-	 * @since 4.3.0
-	 */
-	public var openCallback:Void->Void;
-
-	/**
-	 * Callback method for state close event.
-	 */
-	public var closeCallback:Void->Void;
-
-	/**
-	 * Helper sprite object for non-flash targets. Draws the background.
-	 */
-	@:noCompletion
-	var _bgSprite:FlxBGSprite;
-
-	/**
-	 * Helper var for `close()` so `closeSubState()` can be called on the parent.
-	 */
-	@:allow(flixel.FlxState.resetSubState)
-	var _parentState:FlxState;
-
-	@:noCompletion
-	var _bgColor:FlxColor;
-
-	@:noCompletion
 	@:allow(flixel.FlxState.resetSubState)
 	var _created:Bool = false;
 
 	/**
-	 * @param   BGColor   background color for this substate
+	 * Callback method for state open/resume event.
+	 * @since 4.3.0
 	 */
-	public function new(BGColor:FlxColor = FlxColor.TRANSPARENT)
-	{
-		super();
-		closeCallback = null;
-		openCallback = null;
-
-		if (FlxG.renderTile)
-			_bgSprite = new FlxBGSprite();
-		bgColor = BGColor;
-	}
-
-	override public function draw():Void
-	{
-		// Draw background
-		if (FlxG.renderBlit)
-		{
-			for (camera in cameras)
-			{
-				camera.fill(bgColor);
-			}
-		}
-		else
-		{
-			_bgSprite.draw();
-		}
-
-		// Now draw all children
-		super.draw();
-	}
-
-	override public function destroy():Void
-	{
-		super.destroy();
-		closeCallback = null;
-		openCallback = null;
-		_parentState = null;
-		_bgSprite = FlxDestroyUtil.destroy(_bgSprite);
-	}
+	public dynamic function openCallback():Void {}
 
 	/**
-	 * Closes this substate.
+	 * Callback method for state close event.
 	 */
-	public function close():Void
-	{
-		if (_parentState != null && _parentState.subState == this)
-			_parentState.closeSubState();
+	public dynamic function closeCallback():Void {}
+
+	public function create():Void {}
+	public function close():Void {
+		if (parent == null || parent.subState != this) return;
+
+		parent.closeSubState();
+		active = false;
 	}
 
-	@:noCompletion
-	override inline function get_bgColor():FlxColor
-	{
-		return _bgColor;
+	override public function destroy():Void {
+		super.destroy();
+		parent = null;
 	}
 
-	@:noCompletion
-	override function set_bgColor(Value:FlxColor):FlxColor
-	{
-		if (FlxG.renderTile && _bgSprite != null)
-			_bgSprite.pixels.setPixel32(0, 0, Value);
-
-		return _bgColor = Value;
+	public function tryUpdate(elapsed:Float):Void {
+	    // TODO: find a better way to make controllers not fuck up on menus
+	    if(_skipFrames < 2) {
+			_skipFrames++;
+			return;
+		}
+		update(elapsed);
 	}
+
+	public function onFocusLost():Void {}
+	public function onFocus():Void {}
+	public function onResize(width:Int, height:Int):Void {}
+
+	private var _skipFrames:Int = 0;
 }

@@ -100,7 +100,7 @@ class FlxDrawTilesItem extends FlxDrawBaseItem<FlxDrawTilesItem>
 		camera.canvas.graphics.drawTiles(graphics.tilesheet, drawData, (camera.antialiasing || antialiasing), flags, #if !openfl_legacy shader, #end position);
 		#end
 
-		super.render(camera);
+		++FlxDrawBaseItem.drawCalls;
 	}
 
 	function get_numTiles():Int

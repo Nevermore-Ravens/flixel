@@ -5,6 +5,7 @@ import flixel.graphics.frames.FlxFrame;
 import flixel.math.FlxMatrix;
 import openfl.display.BlendMode;
 import openfl.geom.ColorTransform;
+import openfl.display3D.Context3DWrapMode;
 #if !FLX_DRAW_QUADS
 import openfl.display.Tilesheet;
 #end
@@ -69,6 +70,7 @@ class FlxDrawBaseItem<T>
 	public var hasColorOffsets:Bool = false;
 	public var blending:Int = 0;
 	public var blend:BlendMode;
+	public var wrapMode:Context3DWrapMode;
 
 	public var type:FlxDrawItemType;
 
@@ -84,6 +86,7 @@ class FlxDrawBaseItem<T>
 		antialiasing = false;
 		nextTyped = null;
 		next = null;
+		wrapMode = CLAMP;
 	}
 
 	public function dispose():Void

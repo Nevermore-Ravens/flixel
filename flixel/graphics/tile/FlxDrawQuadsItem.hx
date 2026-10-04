@@ -117,6 +117,7 @@ class FlxDrawQuadsItem extends FlxDrawBaseItem<FlxDrawQuadsItem>
 
 		var shader = shader != null ? shader : graphics.shader;
 		shader.bitmap.input = graphics.bitmap;
+		shader.bitmap.wrap = wrapMode;
 		shader.bitmap.filter = (camera.antialiasing || antialiasing) ? LINEAR : NEAREST;
 		shader.alpha.value = alphas;
 
@@ -134,7 +135,8 @@ class FlxDrawQuadsItem extends FlxDrawBaseItem<FlxDrawQuadsItem>
 		#end
 		camera.canvas.graphics.beginShaderFill(shader);
 		camera.canvas.graphics.drawQuads(rects, null, transforms);
-		super.render(camera);
+		camera.canvas.graphics.endFill();
+		++FlxDrawBaseItem.drawCalls;
 	}
 
 	inline function setParameterValue(parameter:ShaderParameter<Bool>, value:Bool):Void
