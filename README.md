@@ -1,35 +1,25 @@
-[![](https://raw.githubusercontent.com/HaxeFlixel/haxeflixel.com/master/content/_static/images/flixel-logos/HaxeFlixel.png)](http://haxeflixel.com/)
+hi yes hello this is a fork of 5.5.0
 
-[flixel](https://github.com/HaxeFlixel/flixel) | [addons](https://github.com/HaxeFlixel/flixel-addons) | [ui](https://github.com/HaxeFlixel/flixel-ui) | [demos](https://github.com/HaxeFlixel/flixel-demos) | [tools](https://github.com/HaxeFlixel/flixel-tools) | [templates](https://github.com/HaxeFlixel/flixel-templates) | [docs](https://github.com/HaxeFlixel/flixel-docs) | [haxeflixel.com](https://github.com/HaxeFlixel/haxeflixel.com) | [türkçe](https://github.com/HaxeFlixel/flixel/blob/dev/.github/README_TR.md)
+changes
 
-[![CI](https://img.shields.io/github/actions/workflow/status/HaxeFlixel/flixel/main.yml?branch=dev&logo=github)](https://github.com/HaxeFlixel/flixel/actions?query=workflow%3ACI)
-[![Discord](https://img.shields.io/discord/162395145352904705.svg?logo=discord)](https://discordapp.com/invite/rqEBAgF)
-[![Haxelib Version](https://badgen.net/haxelib/v/flixel)](https://lib.haxe.org/p/flixel)
-[![Haxelib Downloads](https://badgen.net/haxelib/d/flixel?color=blue)](https://lib.haxe.org/p/flixel)
-[![Haxelib License](https://badgen.net/haxelib/license/flixel)](LICENSE.md)
-[![Patreon](https://img.shields.io/badge/donate-patreon-blue.svg)](https://www.patreon.com/haxeflixel) 
+in graphics.tile:
+added camera.canvas.graphics.endFill() to DrawQuads and DrawTriangle
+inlined super.render();
 
-[![](images/showcase.png)](https://haxeflixel.com/showcase)
+FlxSubState:
+added parent:FlxState
 
-## Links
+FlxState:
+changed how (sub)states are drawn/processed
 
-Here are the most important links to get you started with HaxeFlixel:
+FlxObject:
+changed moves to false by default instead of true
 
-- [Getting Started](https://haxeflixel.com/documentation/getting-started/)
-- [Documentation](https://haxeflixel.com/documentation)
-- [API](https://api.haxeflixel.com/)
-- [Community](https://haxeflixel.com/documentation/community/)
+FlxSprite:
+added FlxSprite.clipGraphic()
 
-If you want to contribute code or report an issue, please check our [CONTRIBUTING.md](https://github.com/HaxeFlixel/flixel/blob/dev/.github/CONTRIBUTING.md).
+added wrapMode support
+for individual tiling per sprite
 
-## Platforms
-
-Thanks to being built on top of [Haxe](https://haxe.org/) and [OpenFL](http://www.openfl.org/), HaxeFlixel can target the following platforms _natively_:
-
-![](images/platforms.png)
-
-## About
-
-HaxeFlixel has its roots in the original [ActionScript 3 version of Flixel](https://github.com/AdamAtomic/flixel), created by [Adam “Atomic” Saltsman](http://www.adamatomic.com/). It was started by [Alexander Hohlov](https://github.com/beeblerox) in 2011, initially as a straightforward Haxe port of the AS3 codebase and Richard Davey's [Flixel Power Tools](http://www.photonstorm.com/flixel-power-tools).
-
-Thanks to the efforts of the [core team](https://github.com/orgs/HaxeFlixel/people) as well as [over 100 contributors](https://github.com/HaxeFlixel/flixel/graphs/contributors), today's version of HaxeFlixel far surpasses the capabilities of the original. Not only has the core engine seen many substantial improvements and new features, there is also a far richer ecosystem with additional libraries and [over 80 demo projects](https://github.com/HaxeFlixel/flixel-demos) to learn from.
+FlxGame constructor lol
+that's it i just didn't like the arg layout
