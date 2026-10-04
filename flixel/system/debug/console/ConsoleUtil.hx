@@ -3,9 +3,9 @@ package flixel.system.debug.console;
 import flixel.FlxG;
 import flixel.system.debug.log.LogStyle;
 
-using StringTools;
-using flixel.util.FlxArrayUtil;
 using flixel.util.FlxStringUtil;
+using flixel.util.FlxArrayUtil;
+using StringTools;
 
 #if hscript
 import hscript.Expr;
@@ -120,7 +120,7 @@ class ConsoleUtil
 		else if (Reflect.isObject(Object)) // get instance fields
 			fields = Type.getInstanceFields(Type.getClass(Object));
 
-		// on Flash, enums are classes, so Std.isOfType(_, Enum) fails
+		// on Flash, enums are classes, so Std.is(_, Enum) fails
 		fields.remove("__constructs__");
 
 		var filteredFields = [];
@@ -168,7 +168,7 @@ class ConsoleUtil
 	 */
 	public static inline function log(text:Dynamic):Void
 	{
-		FlxG.log.advanced([text], FlxG.log.styles.console);
+		FlxG.log.advanced([text], LogStyle.CONSOLE);
 	}
 }
 

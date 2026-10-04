@@ -1,11 +1,11 @@
 package flixel.util;
 
+import openfl.display.BitmapData;
 import flixel.FlxG;
 import flixel.math.FlxMath;
 import flixel.system.FlxAssets;
 import flixel.util.FlxDestroyUtil.IFlxDestroyable;
 import flixel.util.typeLimit.OneOfTwo;
-import openfl.display.BitmapData;
 
 using StringTools;
 
@@ -378,294 +378,204 @@ class FlxStringUtil
 	/**
 	 * Converts a one-dimensional array of tile data to a comma-separated string.
 	 *
-	 * @param   data    An array full of integer tile references.
-	 * @param   width   The number of tiles in each row.
-	 * @param   invert  Recommended only for 1-bit arrays - changes 0s to 1s and vice versa.
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format.
+	 * @param	Data		An array full of integer tile references.
+	 * @param	Width		The number of tiles in each row.
+	 * @param	Invert		Recommended only for 1-bit arrays - changes 0s to 1s and vice versa.
+	 * @return	A comma-separated string containing the level data in a FlxTilemap-friendly format.
 	 */
-	public static function arrayToCSV(data:Array<Int>, width:Int, invert = false):String
+	public static function arrayToCSV(Data:Array<Int>, Width:Int, Invert:Bool = false):String
 	{
-		return arrayToCSVHelper(invert ? data.map(t->t == 0 ? 1 : 0) : data, width);
+		var row:Int = 0;
+		var column:Int;
+		var csv:String = "";
+		var height:Int = Std.int(Data.length / Width);
+		var index:Int;
+		var offset:Int = 0;
+
+		while (row < height)
+		{
+			column = 0;
+
+			while (column < Width)
+			{
+				index = Data[offset];
+
+				if (Invert)
+				{
+					if (index == 0)
+					{
+						index = 1;
+					}
+					else if (index == 1)
+					{
+						index = 0;
+					}
+				}
+
+				if (column == 0)
+				{
+					if (row == 0)
+					{
+						csv += index;
+					}
+					else
+					{
+						csv += "\n" + index;
+					}
+				}
+				else
+				{
+					csv += ", " + index;
+				}
+
+				column++;
+				offset++;
+			}
+
+			row++;
+		}
+
+		return csv;
 	}
-	
-	static function arrayToCSVHelper<T>(data:Array<T>, width:Int):String
-	{
-		final rows = Std.int(data.length / width);
-		return [ for (row in 0...rows)
-			data.slice(width * row, (1 + row) * width).join(", ")
-		].join("\n");
-	}
-	
+
 	/**
 	 * Converts a BitmapData object to a comma-separated string. Black pixels are flagged as 'solid' by default,
 	 * non-black pixels are set as non-colliding. Black pixels must be PURE BLACK.
 	 *
-	 * @param   bitmap        A Flash BitmapData object, preferably black and white.
-	 * @param   whiteIsSolid  Whether to load white pixels as solid and black and empty
-	 * @param   scale         Default is 1. Scale of 2 means each pixel forms a 2x2 block of tiles, and so on.
-	 * @param	colorMap  	  An array of color values (ignores alpha) in the order they're intended to be assigned as indices
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format.
-	 */
-	@:deprecated("bitmapToCSV with both bitmap and colorMap is deprecated, use a different overload of bitmapToCSV")
-	overload public static inline extern function bitmapToCSV(bitmap:BitmapData, whiteIsSolid:Bool, scale:Int, colorMap:Null<Array<FlxColor>>):String
-	{
-		if (colorMap == null)
-			colorMap = whiteIsSolid ? invertColorMap : defaultColorMap;
-		
-		return bitmapToCSVHelper(bitmap, scale, colorMap, true);
-	}
-	
-	/**
-	 * Converts a BitmapData object to a comma-separated string. Black pixels are flagged as
-	 * 'solid' by default, non-black pixels are set as non-colliding. Black pixels must be PURE BLACK
-	 *
-	 * @param   bitmap        A Flash BitmapData object, preferably black and white
-	 * @param   whiteIsSolid  Whether to load white pixels as solid and black and empty
-	 * @param   scale         Default is 1. Scale of 2 means each pixel forms a 2x2 block of tiles
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format
-	 */
-	overload public static inline extern function bitmapToCSV(bitmap:BitmapData, whiteIsSolid = false, scale = 1):String
-	{
-		return bitmapToCSVHelper(bitmap, scale, whiteIsSolid ? invertColorMap : defaultColorMap, true);
-	}
-	
-	static final defaultColorMap = [FlxColor.WHITE, FlxColor.BLACK];
-	static final invertColorMap = [FlxColor.BLACK, FlxColor.WHITE];
-
-	/**
-	 * Converts a BitmapData object to a comma-separated string.
-	 *
-	 * @param	bitmap   A Flash BitmapData object, preferably black and white.
-	 * @param	scale    Default is 1. Scale of 2 means each pixel forms a 2x2 block of tiles, and so on.
-	 * @param	colorMap An array of rgb color values in the order, they're intended to be assigned as indices
+	 * @param	Bitmap		A Flash BitmapData object, preferably black and white.
+	 * @param	Invert		Load white pixels as solid instead.
+	 * @param	Scale		Default is 1. Scale of 2 means each pixel forms a 2x2 block of tiles, and so on.
+	 * @param	ColorMap	An array of color values (alpha values are ignored) in the order they're intended to be assigned as indices
 	 * @return	A comma-separated string containing the level data in a FlxTilemap-friendly format.
 	 */
-	overload public static inline extern function bitmapToCSV(bitmap:BitmapData, scale = 1, colorMap:Array<FlxColor>):String
+	public static function bitmapToCSV(Bitmap:BitmapData, Invert:Bool = false, Scale:Int = 1, ?ColorMap:Array<FlxColor>):String
 	{
-		return bitmapToCSVHelper(bitmap, scale, colorMap, true);
-	}
+		if (Scale < 1)
+		{
+			Scale = 1;
+		}
 
-	/**
-	 * Converts a BitmapData object to a comma-separated string.
-	 * 
-	 * **NOTE:** Due to OpenFL premultiplying all pixel colors on set,
-	 * any pixel with a 0 alpha and non-zero color components will be treated as 0x00000000
-	 * 
-	 * @param	bitmap   A Flash BitmapData object, preferably black and white.
-	 * @param	scale    Default is 1. Scale of 2 means each pixel forms a 2x2 block of tiles, and so on.
-	 * @param	colorMap An array of rgba color values in the order they're intended to be assigned as indices
-	 * @return	A comma-separated string containing the level data in a FlxTilemap-friendly format.
-	 */
-	public static inline function bitmap32ToCSV(bitmap:BitmapData, scale = 1, colorMap:Array<FlxColor>):String
-	{
-		return bitmapToCSVHelper(bitmap, scale, colorMap, false);
-	}
-	
-	static function bitmapToCSVHelper(bitmap:BitmapData, scale:Int, colors:Array<FlxColor>, ignoreAlpha:Bool):String
-	{
-		final colorMap = generateColorMapFromArray(colors, ignoreAlpha);
-		final array = bitmapToArray2d(bitmap, colorMap, ignoreAlpha, 0);
-		final scaledArray = FlxArrayUtil.scale(array, scale);
-		return scaledArray.map(row->row.join(", ")).join("\n");
-	}
-	
-	static function bitmapToArray2d<T>(bitmap:BitmapData, colorMap:Map<FlxColor, T>, ignoreAlpha:Bool, backupValue:T):Array<Array<T>>
-	{
-		final bitmapColors = bitmap.getVector(bitmap.rect);
-		final columns = bitmap.width;
-		return [ for (row in 0...bitmap.height)
+		// Import and scale image if necessary
+		if (Scale > 1)
 		{
-			[ for (column in 0...columns)
+			var bd:BitmapData = Bitmap;
+			Bitmap = new BitmapData(Bitmap.width * Scale, Bitmap.height * Scale);
+
+			#if !flash
+			var bdW:Int = bd.width;
+			var bdH:Int = bd.height;
+			var pCol:Int = 0;
+
+			for (i in 0...bdW)
 			{
-				final rgba:FlxColor = bitmapColors[row * columns + column];
-				final color = ignoreAlpha ? rgba.rgb : rgba;
-				final value = if (colorMap.exists(color))
+				for (j in 0...bdH)
 				{
-					colorMap[color];
-				}
-				else if (isBrowserManipulatingImages)
-				{
-					final nearestColor = color.nearest(colorMap.keys());
-					colorMap[color] = colorMap[nearestColor];
-					FlxG.log.notice('Bitmap contains unexpected color ${color.toHexString()}, '
-						+ 'likely due to your browser\'s privacy settings. Using nearest color $nearestColor.toHexString()}');
-					colorMap[nearestColor];
-				}
-				else
-				{
-					colorMap[color] = backupValue;
-					FlxG.log.error('Bitmap contains unexpected color ${color.toHexString()}. Defaulting to $backupValue');
-					backupValue;
-				}
-				value;
-			}];
-		}];
-	}
-	
-	#if FLX_UNIT_TEST
-	public static var isBrowserManipulatingImages = false;
-	#elseif html5 
-	static var _isBrowserManipulatingImages:Null<Bool> = null;
-	static var isBrowserManipulatingImages(get, null):Bool;
-	static function get_isBrowserManipulatingImages()
-	{
-		if (_isBrowserManipulatingImages == null)
-		{
-			final width = 100;
-			final height = 100;
-			final bmd = new openfl.display.BitmapData(width, height, true);
-			final pixels = width * height;
-			for (color in [FlxColor.WHITE, FlxColor.BLACK, FlxColor.MAGENTA])
-			{
-				bmd.fillRect(bmd.rect, color);
-				final pixels = bmd.getVector(bmd.rect);
-				for (i in 0...pixels.length)
-				{
-					final pixelColor:FlxColor = pixels[i];
-					if (pixelColor != color)
+					pCol = bd.getPixel(i, j);
+
+					for (k in 0...Scale)
 					{
-						_isBrowserManipulatingImages = true;
-						return true;
+						for (m in 0...Scale)
+						{
+							Bitmap.setPixel(i * Scale + k, j * Scale + m, pCol);
+						}
 					}
 				}
 			}
+			#else
+			var mtx = new Matrix();
+			mtx.scale(Scale, Scale);
+			Bitmap.draw(bd, mtx);
+			#end
 		}
-		
-		return _isBrowserManipulatingImages;
-	}
-	#else
-	static inline var isBrowserManipulatingImages = false;
-	#end
-	
-	static function generateColorMapFromArray(colors:Array<FlxColor>, ignoreAlpha:Bool)
-	{
-		final colorMap = new Map<FlxColor, Int>();
-		for (index => color in colors)
+
+		if (ColorMap != null)
 		{
-			final mappedColor = ignoreAlpha ? color.rgb : color;
-			if (colorMap.exists(mappedColor))
+			for (i in 0...ColorMap.length)
 			{
-				if (color == mappedColor) // argb matches
-					FlxG.log.error('Color map contains duplicates of ${color.toHexString()}');
-				else
-					FlxG.log.error('Color map contains duplicate rgb for ${color.toHexString()} and ${mappedColor.toHexString()}');
+				ColorMap[i] = ColorMap[i].to24Bit();
 			}
-			else
-				colorMap[mappedColor] = index;
 		}
-		
-		#if html5
-		if (!isBrowserManipulatingImages)
-			return colorMap;
-		
-		// check for farbling, try to account
-		final width = 100;
-		final height = 100;
-		final bmd = new openfl.display.BitmapData(width, height, true);
-		final pixels = width * height;
-		var mapModified = false;
-		for (color => index in colorMap)
+
+		// Walk image and export pixel values
+		var row:Int = 0;
+		var column:Int;
+		var pixel:Int;
+		var csv:String = "";
+		var bitmapWidth:Int = Bitmap.width;
+		var bitmapHeight:Int = Bitmap.height;
+
+		while (row < bitmapHeight)
 		{
-			bmd.fillRect(bmd.rect, color);
-			var errorFound = false;
-			final newColors = new Array<FlxColor>();
-			final pixels = bmd.getVector(bmd.rect);
-			for (i in 0...pixels.length)
+			column = 0;
+
+			while (column < bitmapWidth)
 			{
-				// final pixelColor:FlxColor = bmd.getPixel32(i % width, Std.int(i / width));
-				final pixelColor:FlxColor = pixels[i];
-				if (pixelColor != color && !newColors.contains(pixelColor))
+				// Decide if this pixel/tile is solid (1) or not (0)
+				pixel = Bitmap.getPixel(column, row);
+
+				if (ColorMap != null)
 				{
-					if (colorMap.exists(pixelColor))
+					pixel = ColorMap.indexOf(pixel);
+				}
+				else if ((Invert && (pixel > 0)) || (!Invert && (pixel == 0)))
+				{
+					pixel = 1;
+				}
+				else
+				{
+					pixel = 0;
+				}
+
+				// Write the result to the string
+				if (column == 0)
+				{
+					if (row == 0)
 					{
-						FlxG.log.error('Cannot reliably read bitmaps, due to your brower\'s privacy settings. '
-							+ 'Source pixels ${color.toHexString()}, may become ${pixelColor.toHexString()}');
-						
-						errorFound = true;
+						csv += pixel;
 					}
 					else
 					{
-						FlxG.log.notice('Browser image manipulation detected. '
-							+ 'Source pixels [$index]${color.toHexString()}, may become ${pixelColor.toHexString()}');
-						newColors.push(pixelColor);
-						mapModified = true;
+						csv += "\n" + pixel;
 					}
 				}
+				else
+				{
+					csv += ", " + pixel;
+				}
+
+				column++;
 			}
-			
-			// Make the modifed colors point to the same index
-			for (color in newColors)
-				colorMap[color] = index;
+
+			row++;
 		}
-		
-		if (mapModified)
-			FlxG.log.add('Color map adjusted to compensate for your browser\'s privacy settings'
-				+ '${[for (color=>index in colorMap) '${color.toHexString()} => $index']}');
-		#end
-		
-		return colorMap;
+
+		return csv;
 	}
 
 	/**
 	 * Converts a resource image file to a comma-separated string. Black pixels are flagged as 'solid' by default,
 	 * non-black pixels are set as non-colliding. Black pixels must be PURE BLACK.
 	 *
-	 * @param   graphic       An embedded graphic, preferably black and white.
-	 * @param   whiteIsSolid  Whether to load white pixels as solid and black and empty.
-	 * @param   scale         Default is 1.  Scale of 2 means each pixel forms a 2x2 block of tiles, and so on.
-	 * @param   colorMap      An array of color values (ingoring alpha) in the order they're intended to be assigned as indices.
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format.
+	 * @param	ImageFile	An embedded graphic, preferably black and white.
+	 * @param	Invert		Load white pixels as solid instead.
+	 * @param	Scale		Default is 1.  Scale of 2 means each pixel forms a 2x2 block of tiles, and so on.
+	 * @param	ColorMap	An array of color values (alpha values are ignored) in the order they're intended to be assigned as indices
+	 * @return	A comma-separated string containing the level data in a FlxTilemap-friendly format.
 	 */
-	@:deprecated("imageToCSV with both whiteIsSolid and colorMap is deprecated, use a different overload of imageToCSV")
-	overload public static inline extern function imageToCSV(graphic:FlxGraphicAsset, whiteIsSolid:Bool, scale:Int, colorMap:Null<Array<FlxColor>>):String
+	public static function imageToCSV(ImageFile:Dynamic, Invert:Bool = false, Scale:Int = 1, ?ColorMap:Array<FlxColor>):String
 	{
-		if (colorMap != null)
-			colorMap = whiteIsSolid ? invertColorMap : defaultColorMap;
-		
-		return bitmapToCSVHelper(graphic.resolveBitmapData(), scale, colorMap, true);
-	}
-	
-	/**
-	 * Converts a resource image file to a comma-separated string. Black pixels are flagged as 'solid' by default,
-	 * non-black pixels are set as non-colliding. Black pixels must be PURE BLACK.
-	 *
-	 * @param   graphic       An embedded graphic, preferably black and white.
-	 * @param   whiteIsSolid  Whether to load white pixels as solid and black and empty
-	 * @param   scale         Default is 1.  Scale of 2 means each pixel forms a 2x2 block of tiles, and so on
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format
-	 * @since 6.2.0
-	 */
-	overload public static inline extern function imageToCSV(graphic:FlxGraphicAsset, whiteIsSolid = false, scale = 1):String
-	{
-		return bitmapToCSVHelper(graphic.assertBitmapData(), scale, whiteIsSolid ? invertColorMap : defaultColorMap, true);
-	}
-	
-	/**
-	 * Converts a resource image file to a comma-separated string
-	 *
-	 * @param   graphic   An embedded graphic, preferably black and white.
-	 * @param   scale     Default is 1.  Scale of 2 means each pixel forms a 2x2 block of tiles, and so on
-	 * @param   colorMap  An array of color values (ingoring alpha) in the order they're intended to be assigned as indices
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format
-	 * @since 6.2.0
-	 */
-	overload public static inline extern function imageToCSV(graphic:FlxGraphicAsset, scale = 1, colorMap:Array<FlxColor>):String
-	{
-		return bitmapToCSVHelper(graphic.assertBitmapData(), scale, colorMap, true);
-	}
-	
-	/**
-	 * Converts a resource image file to a comma-separated string
-	 *
-	 * @param   graphic   An embedded graphic, preferably black and white.
-	 * @param   scale     Default is 1.  Scale of 2 means each pixel forms a 2x2 block of tiles, and so on
-	 * @param   colorMap  An array of color values in the order they're intended to be assigned as indices
-	 * @return  A comma-separated string containing the level data in a FlxTilemap-friendly format
-	 * @since 6.2.0
-	 */
-	overload public static inline extern function image32ToCSV(graphic:FlxGraphicAsset, scale = 1, colorMap:Array<FlxColor>):String
-	{
-		return bitmapToCSVHelper(graphic.assertBitmapData(), scale, colorMap, false);
+		var tempBitmapData:BitmapData;
+
+		if ((ImageFile is String))
+		{
+			tempBitmapData = FlxAssets.getBitmapData(ImageFile);
+		}
+		else
+		{
+			tempBitmapData = (Type.createInstance(ImageFile, [])).bitmapData;
+		}
+
+		return bitmapToCSV(tempBitmapData, Invert, Scale, ColorMap);
 	}
 
 	/**
@@ -755,11 +665,12 @@ class FlxStringUtil
 	public static function toTitleCase(str:String):String 
 	{
 		var exempt:Array<String> = ["a", "an", "the", "at", "by", "for", "in", "of", "on", "to", "up", "and", "as", "but", "or", "nor"];
+		var roman = ~/^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$/i;
 		var words:Array<String> = str.toLowerCase().split(" ");
 		
 		for (i in 0...words.length) 
 		{
-			if (isRomanNumeral(words[i]))
+			if (roman.match(words[i]))
 				words[i] = words[i].toUpperCase();
 			else if (i == 0 || exempt.indexOf(words[i]) == -1)
 				words[i] = words[i].charAt(0).toUpperCase() + words[i].substr(1);
@@ -767,25 +678,6 @@ class FlxStringUtil
 
 		return words.join(" ");
 		
-	}
-	
-	/**
-	 * Capitalizes the first letter of every word, does not change the others to lower
-	 */
-	static final whitespace = ~/(?<=\r|\s|^)([a-z])/g;
-	public static function capitalizeFirstLetters(str:String):String
-	{
-		// TODO: Unit test
-		return whitespace.map(str, (r)->r.matched(0).toUpperCase());
-	}
-	
-	/**
-	 * Wether the string contains a valid roman numeral
-	 */
-	static final roman = ~/^(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)$/i;
-	public static function isRomanNumeral(str:String):Bool
-	{
-		return roman.match(str);
 	}
 }
 

@@ -1,11 +1,16 @@
 package flixel;
 
+import openfl.Lib;
+import openfl.display.DisplayObject;
+import openfl.display.Stage;
+import openfl.display.StageDisplayState;
+import openfl.net.URLRequest;
+import flixel.effects.postprocess.PostProcess;
 import flixel.math.FlxMath;
 import flixel.math.FlxRandom;
 import flixel.math.FlxRect;
 import flixel.system.FlxQuadTree;
 import flixel.system.FlxVersion;
-import flixel.system.frontEnds.AssetFrontEnd;
 import flixel.system.frontEnds.BitmapFrontEnd;
 import flixel.system.frontEnds.BitmapLogFrontEnd;
 import flixel.system.frontEnds.CameraFrontEnd;
@@ -22,12 +27,6 @@ import flixel.system.scaleModes.BaseScaleMode;
 import flixel.system.scaleModes.RatioScaleMode;
 import flixel.util.FlxCollision;
 import flixel.util.FlxSave;
-import flixel.util.typeLimit.NextState;
-import openfl.Lib;
-import openfl.display.DisplayObject;
-import openfl.display.Stage;
-import openfl.display.StageDisplayState;
-import openfl.net.URLRequest;
 #if FLX_TOUCH
 import flixel.input.touch.FlxTouchManager;
 #end
@@ -48,6 +47,12 @@ import flixel.input.FlxAccelerometer;
 #end
 #if FLX_POINTER_INPUT
 import flixel.input.FlxSwipe;
+#end
+#if FLX_POST_PROCESS
+import flixel.util.FlxDestroyUtil;
+import openfl.display.OpenGLView;
+
+using flixel.util.FlxArrayUtil;
 #end
 
 #if html5
@@ -100,9 +105,7 @@ class FlxG
 	 * The HaxeFlixel version, in semantic versioning syntax. Use `Std.string()`
 	 * on it to get a `String` formatted like this: `"HaxeFlixel MAJOR.MINOR.PATCH-COMMIT_SHA"`.
 	 */
-	#if !macro
-	public static final VERSION:FlxVersion = new flixel.system.FlxAutoVersion<"flixel">();
-	#end
+	public static var VERSION(default, null):FlxVersion = new FlxVersion(5, 5, 0);
 
 	/**
 	 * Internal tracker for game object.
@@ -332,12 +335,6 @@ class FlxG
 	public static var signals(default, null):SignalFrontEnd = new SignalFrontEnd();
 
 	/**
-	 * Contains helper functions relating to retrieving assets
-	 * @since 5.9.0
-	 */
-	public static var assets(default, null):AssetFrontEnd = new AssetFrontEnd();
-	
-	/**
 	 * Resizes the game within the window by reapplying the current scale mode.
 	 */
 	public static inline function resizeGame(width:Int, height:Int):Void
@@ -351,6 +348,9 @@ class FlxG
 	public static function resizeWindow(width:Int, height:Int):Void
 	{
 		#if desktop
+		#if openfl_legacy
+		stage.resize(width, height);
+		#else
 		#if air
 		var window = flash.desktop.NativeApplication.nativeApplication.activeWindow;
 		window.width = width;
@@ -359,10 +359,11 @@ class FlxG
 		Lib.application.window.resize(width, height);
 		#end
 		#end
+		#end
 	}
 
 	/**
-	 * Like hitting the reset button on a game console, this will re-launch the game as if it just started.
+	 * Like hitting the reset button a game console, this will re-launch the game as if it just started.
 	 */
 	public static inline function resetGame():Void
 	{
@@ -372,20 +373,21 @@ class FlxG
 	/**
 	 * Attempts to switch from the current game state to `nextState`.
 	 * The state switch is successful if `switchTo()` of the current `state` returns `true`.
-	 * @param   nextState  A constructor for the initial state, ex: `PlayState.new` or `()->new PlayState()`.
-	 *                     Note: Before Flixel 5.6.0, this took a `FlxState` instance,
-	 *                     this is still available, for backwards compatibility.
 	 */
-	public static inline function switchState(nextState:NextState):Void
+	public static inline function switchState(nextState:FlxState):Void
 	{
 		final stateOnCall = FlxG.state;
-		state.startOutro(function()
+		// Use reflection to avoid deprecation warning on switchTo
+		if (Reflect.field(state, 'switchTo')(nextState))
 		{
-			if (FlxG.state == stateOnCall)
-				game._nextState = nextState;
-			else
-				FlxG.log.warn("`onOutroComplete` was called after the state was switched. This will be ignored");
-		});
+			state.startOutro(function()
+			{
+				if (FlxG.state == stateOnCall)
+					game._requestedState = nextState;
+				else
+					FlxG.log.warn("`onOutroComplete` was called after the state was switched. This will be ignored");
+			});
+		}
 	}
 
 	/**
@@ -394,7 +396,7 @@ class FlxG
 	 */
 	public static inline function resetState():Void
 	{
-		switchState(state._constructor);
+		switchState(Type.createInstance(Type.getClass(state), []));
 	}
 
 	/**
@@ -510,6 +512,62 @@ class FlxG
 		return child;
 	}
 
+	public static function addPostProcess(postProcess:PostProcess):PostProcess
+	{
+		#if FLX_POST_PROCESS
+		if (OpenGLView.isSupported)
+		{
+			var postProcesses = game.postProcesses;
+
+			// chaining
+			var length = postProcesses.length;
+			if (length > 0)
+			{
+				postProcesses[length - 1].to = postProcess;
+			}
+
+			game.postProcessLayer.addChild(postProcess);
+			postProcesses.push(postProcess);
+		}
+		else
+		{
+			FlxG.log.error("Shaders are not supported on this platform.");
+		}
+		#end
+
+		return postProcess;
+	}
+
+	public static function removePostProcess(postProcess:PostProcess):Void
+	{
+		#if FLX_POST_PROCESS
+		var postProcesses = game.postProcesses;
+		if (postProcesses.remove(postProcess))
+		{
+			chainPostProcesses();
+			postProcess.to = null;
+
+			FlxDestroyUtil.removeChild(game.postProcessLayer, postProcess);
+		}
+		#end
+	}
+
+	#if FLX_POST_PROCESS
+	static function chainPostProcesses():Void
+	{
+		var postProcesses = game.postProcesses;
+
+		if (postProcesses.length > 0)
+		{
+			for (i in 0...postProcesses.length - 1)
+			{
+				postProcesses[i].to = postProcesses[i + 1];
+			}
+			postProcesses.last().to = null;
+		}
+	}
+	#end
+
 	/**
 	 * Opens a web page, by default a new tab or window. If the URL does not
 	 * already start with `"http://"` or `"https://"`, it gets added automatically.
@@ -541,10 +599,6 @@ class FlxG
 		FlxG.height = height;
 
 		initRenderMethod();
-		#if FLX_OPENGL_AVAILABLE
-		// Query once when window is created and cache for later
-		bitmap.get_maxTextureSize();
-		#end
 
 		FlxG.initialWidth = width;
 		FlxG.initialHeight = height;
@@ -553,23 +607,23 @@ class FlxG
 
 		// Instantiate inputs
 		#if FLX_KEYBOARD
-		keys = inputs.addInput(new FlxKeyboard());
+		keys = inputs.add(new FlxKeyboard());
 		#end
 
 		#if FLX_MOUSE
-		mouse = inputs.addInput(new FlxMouse(game._inputContainer));
+		mouse = inputs.add(new FlxMouse(game._inputContainer));
 		#end
 
 		#if FLX_TOUCH
-		touches = inputs.addInput(new FlxTouchManager());
+		touches = inputs.add(new FlxTouchManager());
 		#end
 
 		#if FLX_GAMEPAD
-		gamepads = inputs.addInput(new FlxGamepadManager());
+		gamepads = inputs.add(new FlxGamepadManager());
 		#end
 
 		#if android
-		android = inputs.addInput(new FlxAndroidKeys());
+		android = inputs.add(new FlxAndroidKeys());
 		#end
 
 		#if FLX_ACCELEROMETER
@@ -590,12 +644,30 @@ class FlxG
 
 	static function initRenderMethod():Void
 	{
-		#if !flash
+		renderMethod = BLITTING;
+
+		#if (!lime_legacy && !flash)
+		#if (lime >= "7.0.0")
 		renderMethod = switch (stage.window.context.type)
 		{
 			case OPENGL, OPENGLES, WEBGL: DRAW_TILES;
 			default: BLITTING;
 		}
+		#else
+		if (!Lib.application.config.windows[0].hardware)
+		{
+			renderMethod = BLITTING;
+		}
+		else
+		{
+			renderMethod = switch (stage.window.renderer.type)
+			{
+				case OPENGL, CONSOLE: DRAW_TILES;
+				case CANVAS, FLASH, CAIRO: BLITTING;
+				default: BLITTING;
+			}
+		}
+		#end
 		#else
 		#if web
 		renderMethod = BLITTING;
@@ -661,24 +733,21 @@ class FlxG
 	}
 
 	#if FLX_MOUSE
-	static function set_mouse(newMouse:FlxMouse):FlxMouse
+	static function set_mouse(NewMouse:FlxMouse):FlxMouse
 	{
-		// if there's no mouse, add it
-		if (mouse == null)
+		if (mouse == null) // if no mouse, just add it
 		{
-			mouse = inputs.addUniqueType(newMouse);
+			mouse = inputs.add(NewMouse); // safe to do b/c it won't add repeats!
 			return mouse;
 		}
-		
-		// replace existing mouse
-		final oldMouse:FlxMouse = mouse;
-		final result:FlxMouse = inputs.replace(oldMouse, newMouse, true);
+		var oldMouse:FlxMouse = mouse;
+		var result:FlxMouse = inputs.replace(oldMouse, NewMouse); // replace existing mouse
 		if (result != null)
 		{
 			mouse = result;
-			return newMouse;
+			oldMouse.destroy();
+			return NewMouse;
 		}
-		
 		return oldMouse;
 	}
 	#end
@@ -704,17 +773,17 @@ class FlxG
 		if (value > updateFramerate)
 			log.warn("FlxG.drawFramerate: the update framerate shouldn't be smaller than the draw framerate," + " since it can stop your game from updating.");
 
-		value = Std.int(Math.abs(value));
+		drawFramerate = Std.int(Math.abs(value));
 
 		if (game.stage != null)
-			game.stage.frameRate = value;
+			game.stage.frameRate = drawFramerate;
 
-		game._maxAccumulation = 2000 / value - 1;
+		game._maxAccumulation = 2000 / drawFramerate - 1;
 
 		if (game._maxAccumulation < game._stepMS)
 			game._maxAccumulation = game._stepMS;
 
-		return drawFramerate = value;
+		return value;
 	}
 
 	static function get_fullscreen():Bool

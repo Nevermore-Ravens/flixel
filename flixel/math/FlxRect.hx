@@ -1,8 +1,9 @@
 package flixel.math;
 
-import flixel.util.FlxPool;
-import flixel.util.FlxStringUtil;
 import openfl.geom.Rectangle;
+import flixel.util.FlxPool;
+import flixel.util.FlxPool.IFlxPooled;
+import flixel.util.FlxStringUtil;
 
 /**
  * Stores a rectangle.
@@ -14,31 +15,27 @@ class FlxRect implements IFlxPooled
 	static var _pool:FlxPool<FlxRect> = new FlxPool(FlxRect.new.bind(0, 0, 0, 0));
 	// With the version below, this caused weird CI issues when FLX_NO_POINT_POOL is defined
 	// static var _pool = new FlxPool<FlxRect>(FlxRect);
-	
-	static inline function getPooled(weak = false):FlxRect
-	{
-		final rect = _pool.get();
-		rect._inPool = false;
-		rect._weak = weak;
-		return rect;
-	}
-	
+
 	/**
 	 * Recycle or create new FlxRect.
 	 * Be sure to put() them back into the pool after you're done with them!
 	 */
-	public static inline function get(x = 0.0, y = 0.0, width = 0.0, height = 0.0):FlxRect
+	public static inline function get(X:Float = 0, Y:Float = 0, Width:Float = 0, Height:Float = 0):FlxRect
 	{
-		return getPooled().set(x, y, width, height);
+		var rect = _pool.get().set(X, Y, Width, Height);
+		rect._inPool = false;
+		return rect;
 	}
 
 	/**
 	 * Recycle or create a new FlxRect which will automatically be released
 	 * to the pool when passed into a flixel function.
 	 */
-	public static inline function weak(x = 0.0, y = 0.0, width = 0.0, height = 0.0):FlxRect
+	public static inline function weak(X:Float = 0, Y:Float = 0, Width:Float = 0, Height:Float = 0):FlxRect
 	{
-		return getPooled(true).set(x, y, width, height);
+		var rect = get(X, Y, Width, Height);
+		rect._weak = true;
+		return rect;
 	}
 
 	public var x:Float;
@@ -88,6 +85,7 @@ class FlxRect implements IFlxPooled
 		if (!_inPool)
 		{
 			_inPool = true;
+			_weak = false;
 			_pool.putUnsafe(this);
 		}
 	}
@@ -129,150 +127,60 @@ class FlxRect implements IFlxPooled
 	/**
 	 * Fill this rectangle with the data provided.
 	 *
-	 * @param   x       The X-coordinate of the point in space
-	 * @param   y       The Y-coordinate of the point in space
-	 * @param   width   Desired width of the rectangle
-	 * @param   height  Desired height of the rectangle
-	 * @return  This rectangle
+	 * @param	X		The X-coordinate of the point in space.
+	 * @param	Y		The Y-coordinate of the point in space.
+	 * @param	Width	Desired width of the rectangle.
+	 * @param	Height	Desired height of the rectangle.
+	 * @return	A reference to itself.
 	 */
-	public inline function set(x = 0.0, y = 0.0, width = 0.0, height = 0.0):FlxRect
+	public inline function set(X:Float = 0, Y:Float = 0, Width:Float = 0, Height:Float = 0):FlxRect
 	{
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
+		x = X;
+		y = Y;
+		width = Width;
+		height = Height;
 		return this;
-	}
-	
-	/**
-	 * Fill this rectangle from the two given corner locations
-	 *
-	 * @param   x1  The position of this rect
-	 * @param   y1  The position of this rect
-	 * @param   x2  The position of this rect's opposite corner
-	 * @param   y2  The position of this rect's opposite corner
-	 * @return  This rectangle
-	 */
-	public inline function setBounds(x1:Float, y1:Float, x2:Float, y2:Float):FlxRect
-	{
-		return set(x1, y1, x2 - x1, y2 - y1);
-	}
-	
-	/**
-	 * Ensures that width and height are positive while covering the same space. For example:
-	 * ```haxe
-	 * rect.set(100, 100, -50, -50).abs();
-	 * // Is the same as
-	 * rect.set(50, 50, 50, 50);
-	 * ```
-	 * @since 6.2.0
-	 */
-	public inline function abs()
-	{
-		if (width < 0)
-		{
-			x += width;
-			width = -width;
-		}
-		
-		if (height < 0)
-		{
-			y += height;
-			height = -height;
-		}
-		
-		return this;
-	}
-	
-	/**
-	 * Fills the rectangle so that it has always has a positive width and height. For example:
-	 * ```haxe
-	 * rect.setAbs(100, 100, -50, -50);
-	 * // Is the same as
-	 * rect.set(50, 50, 50, 50);
-	 * ```
-	 * 
-	 * @param x       The X-coordinate of the point in space
-	 * @param y       The Y-coordinate of the point in space
-	 * @param width   Desired width of the rectangle
-	 * @param height  Desired height of the rectangle
-	 * @return  This rectangle
-	 */
-	public inline function setAbs(x:Float, y:Float, width:Float, height:Float)
-	{
-		return this.set(x, y, width, height).abs();
-	}
-	
-	/**
-	 * Fills the rectangle so that it has always has a positive width and height. For example:
-	 * ```haxe
-	 * rect.setBoundsAbs(100, 100, 50, 50);
-	 * // Is the same as
-	 * rect.setBounds(50, 50, 100, 100);
-	 * // ...or
-	 * rect.set(50, 50, 50, 50);
-	 * ```
-	 *
-	 * @param   x1  The position of this rect
-	 * @param   y1  The position of this rect
-	 * @param   x2  The position of this rect's opposite corner
-	 * @param   y2  The position of this rect's opposite corner
-	 * @return  This rectangle
-	 */
-	public overload inline extern function setBoundsAbs(x1 = 0.0, y1 = 0.0, x2 = 0.0, y2 = 0.0):FlxRect
-	{
-		return setAbs(x1, y1, x2 - x1, y2 - y1);
-	}
-	
-	/**
-	 * Helper function, just copies the values from the specified rectangle.
-	 *
-	 * @param   rect  Any FlxRect.
-	 * @return  A reference to itself.
-	 */
-	public inline function copyFrom(rect:FlxRect):FlxRect
-	{
-		x = rect.x;
-		y = rect.y;
-		width = rect.width;
-		height = rect.height;
-		
-		rect.putWeak();
-		return this;
-	}
-	
-	/**
-	 * Helper function, just copies the values from this rectangle to the specified rectangle.
-	 *
-	 * @param   point  Any FlxRect.
-	 * @return  A reference to the altered rectangle parameter.
-	 */
-	public inline function copyTo(rect:FlxRect):FlxRect
-	{
-		rect.x = x;
-		rect.y = y;
-		rect.width = width;
-		rect.height = height;
-		
-		putWeak();
-		return rect;
 	}
 
 	/**
-	 * Copies this rect's data into a new instance (from the pool)
+	 * Helper function, just copies the values from the specified rectangle.
 	 *
-	 * @return  A new rectangle
+	 * @param	Rect	Any FlxRect.
+	 * @return	A reference to itself.
 	 */
-	public inline function clone():FlxRect
+	public inline function copyFrom(Rect:FlxRect):FlxRect
 	{
-		return copyTo(getPooled());
+		x = Rect.x;
+		y = Rect.y;
+		width = Rect.width;
+		height = Rect.height;
+
+		Rect.putWeak();
+		return this;
 	}
-	
+
+	/**
+	 * Helper function, just copies the values from this rectangle to the specified rectangle.
+	 *
+	 * @param	Point	Any FlxRect.
+	 * @return	A reference to the altered rectangle parameter.
+	 */
+	public inline function copyTo(Rect:FlxRect):FlxRect
+	{
+		Rect.x = x;
+		Rect.y = y;
+		Rect.width = width;
+		Rect.height = height;
+
+		Rect.putWeak();
+		return Rect;
+	}
+
 	/**
 	 * Helper function, just copies the values from the specified Flash rectangle.
 	 *
-	 * @param   flashRect	Any Rectangle.
-	 * @return  A reference to itself.
+	 * @param	FlashRect	Any Rectangle.
+	 * @return	A reference to itself.
 	 */
 	public inline function copyFromFlash(FlashRect:Rectangle):FlxRect
 	{
@@ -304,61 +212,29 @@ class FlxRect implements IFlxPooled
 	}
 
 	/**
-	 * Checks to see if this rectangle overlaps another
+	 * Checks to see if some FlxRect object overlaps this FlxRect object.
 	 *
-	 * @param   rect  The other rectangle
-	 * @return  Whether the two rectangles overlap
+	 * @param	Rect	The rectangle being tested.
+	 * @return	Whether or not the two rectangles overlap.
 	 */
-	public inline function overlaps(rect:FlxRect):Bool
+	public inline function overlaps(Rect:FlxRect):Bool
 	{
-		final result = rect.right > left
-			&& rect.left < right
-			&& rect.bottom > top
-			&& rect.top < bottom;
-		rect.putWeak();
-		return result;
-	}
-
-	/**
-	 * Checks to see if this rectangle fully contains another
-	 *
-	 * @param   rect  The other rectangle
-	 * @return  Whether this rectangle contains the given rectangle
-	 * @since 6.1.0
-	 */
-	public inline function contains(rect:FlxRect):Bool
-	{
-		final result = rect.left >= left
-			&& rect.right <= right
-			&& rect.top >= top
-			&& rect.bottom <= bottom;
-		rect.putWeak();
+		var result = (Rect.x + Rect.width > x) && (Rect.x < x + width) && (Rect.y + Rect.height > y) && (Rect.y < y + height);
+		Rect.putWeak();
 		return result;
 	}
 
 	/**
 	 * Returns true if this FlxRect contains the FlxPoint
 	 *
-	 * @param   point  The FlxPoint to check
-	 * @return  True if the FlxPoint is within this FlxRect, otherwise false
+	 * @param	Point	The FlxPoint to check
+	 * @return	True if the FlxPoint is within this FlxRect, otherwise false
 	 */
-	public inline function containsPoint(point:FlxPoint):Bool
+	public inline function containsPoint(Point:FlxPoint):Bool
 	{
-		final result = containsXY(point.x, point.y);
-		point.putWeak();
+		var result = FlxMath.pointInFlxRect(Point.x, Point.y, this);
+		Point.putWeak();
 		return result;
-	}
-
-	/**
-	 * Returns true if this FlxRect contains the FlxPoint
-	 *
-	 * @param   xPos  The x position to check
-	 * @param   yPos  The y position to check
-	 * @return  True if the FlxPoint is within this FlxRect, otherwise false
-	 */
-	public inline function containsXY(xPos:Float, yPos:Float):Bool
-	{
-		return xPos >= left && xPos <= right && yPos >= top && yPos <= bottom;
 	}
 
 	/**
@@ -542,107 +418,39 @@ class FlxRect implements IFlxPooled
 		rect.putWeak();
 		return result;
 	}
-	
+
 	/**
 	 * Returns the area of intersection with specified rectangle.
 	 * If the rectangles do not intersect, this method returns an empty rectangle.
 	 *
-	 * @param   rect    Rectangle to check intersection against
-	 * @param   result  The resulting instance, if `null`, a new one is created
-	 * @return  The area of intersection of two rectangles
+	 * @param	rect	Rectangle to check intersection against.
+	 * @return	The area of intersection of two rectangles.
 	 */
 	public function intersection(rect:FlxRect, ?result:FlxRect):FlxRect
 	{
 		if (result == null)
 			result = FlxRect.get();
-		
-		final x0:Float = x < rect.x ? rect.x : x;
-		final x1:Float = right > rect.right ? rect.right : right;
-		final y0:Float = y < rect.y ? rect.y : y;
-		final y1:Float = bottom > rect.bottom ? rect.bottom : bottom;
+
+		var x0:Float = x < rect.x ? rect.x : x;
+		var x1:Float = right > rect.right ? rect.right : right;
+		if (x1 <= x0)
+		{
+			rect.putWeak();
+			return result;
+		}
+
+		var y0:Float = y < rect.y ? rect.y : y;
+		var y1:Float = bottom > rect.bottom ? rect.bottom : bottom;
+		if (y1 <= y0)
+		{
+			rect.putWeak();
+			return result;
+		}
+
 		rect.putWeak();
-		
-		if (x1 <= x0 || y1 <= y0)
-			return result.set(0, 0, 0, 0);
-		
 		return result.set(x0, y0, x1 - x0, y1 - y0);
 	}
-	
-	/**
-	 * Resizes `this` instance so that it fits within the intersection of the this and
-	 * the target rect. If there is no overlap between them, The result is an empty rect.
-	 *
-	 * @param   rect    Rectangle to check intersection against
-	 * @return  This rect, useful for chaining
-	 * @since 5.9.0
-	 */
-	public function clipTo(rect:FlxRect):FlxRect
-	{
-		return rect.intersection(this, this);
-	}
-	
-	/**
-	 * 
-	 * Expands all four edges outward by the specified amounts. For example:
-	 * `rect.pad(10)` will increase the width and height by 20 (10 on each side).
-	 * 
-	 * **Note:** Negative numbers will shrink the edge.
-	 * 
-	 * @param amount The amount to extend the left, top, right and bottom edges
-	 * @since 6.2.0
-	 */
-	overload public inline extern function pad(amount:Float)
-	{
-		return pad(amount, amount, amount, amount);
-	}
-	
-	/**
-	 * Expands all four edges outward by the specified amounts. For example:
-	 * `rect.pad(10, 5)` will increase the width by 20 (10 on each side) and the height by 10.
-	 * 
-	 * **Note:** Negative numbers will shrink the edges.
-	 * 
-	 * @param   leftAndRight  The amount to extend both the left and right
-	 * @param   topAndBottom  The amount to extend both the top and bottom
-	 * @since 6.2.0
-	 */
-	overload public inline extern function pad(leftAndRight:Float, topAndBottom:Float)
-	{
-		return pad(leftAndRight, topAndBottom, leftAndRight, topAndBottom);
-	}
-	
-	/**
-	 * Expands all four edges outward by the specified amounts. For example:
-	 * `rect.pad(10, 5, 20, 5)` will increase the width by 30 (10 on the left and 20 on the right)
-	 * and the height by 10 (5 on both side).
-	 * 
-	 * **Note:** Negative numbers will shrink the edge.
-	 * 
-	 * @param   left    The amount to extend the left
-	 * @param   top     The amount to extend the top
-	 * @param   right   The amount to extend the right
-	 * @param   bottom  The amount to extend the bottom
-	 * @since 6.2.0
-	 */
-	overload public inline extern function pad(left:Float, top:Float, right:Float, bottom:Float)
-	{
-		return set(x - left, y - top, width + left + right, height + top + bottom);
-	}
-	
-	/**
-	 * The middle point of this rect
-	 * 
-	 * @param   point  The point to hold the result, if `null` a new one is created
-	 * @since 5.9.0
-	 */
-	public function getMidpoint(?point:FlxPoint)
-	{
-		if (point == null)
-			point = FlxPoint.get();
-		
-		return point.set(x + 0.5 * width, y + 0.5 * height);
-	}
-	
+
 	/**
 	 * Convert object to readable string name. Useful for debugging, save games, etc.
 	 */
@@ -709,85 +517,4 @@ class FlxRect implements IFlxPooled
 	{
 		return _pool;
 	}
-}
-
-@:forward
-@:forward.new
-@:forward.variance
-abstract FlxReadOnlyRect(FlxRect) from FlxRect to IFlxPooled
-{
-	public static var pool(get, never):IFlxPool<FlxRect>;
-	static inline function get_pool()
-	{
-		return FlxRect.pool;
-	}
-
-	/**
-	 * Recycle or create new FlxRect.
-	 * Be sure to put() them back into the pool after you're done with them!
-	 */
-	public static inline function get(x = 0.0, y = 0.0, width = 0.0, height = 0.0):FlxReadOnlyRect
-	{
-		return FlxRect.get(x, y, width, height);
-	}
-
-	/**
-	 * Recycle or create a new FlxRect which will automatically be released
-	 * to the pool when passed into a flixel function.
-	 */
-	public static inline function weak(x = 0.0, y = 0.0, width = 0.0, height = 0.0):FlxReadOnlyRect
-	{
-		return FlxRect.weak(x, y, width, height);
-	}
-
-	public var x(get, never):Float;
-	inline function get_x() return this.x;
-	
-	public var y(get, never):Float;
-	inline function get_y() return this.y;
-	
-	public var width(get, never):Float;
-	inline function get_width() return this.width;
-	
-	public var height(get, never):Float;
-	inline function get_height() return this.height;
-	
-	/** The x coordinate of the left side of the rectangle */
-	public var left(get, never):Float;
-	inline function get_left() return this.left;
-
-	/** The x coordinate of the right side of the rectangle */
-	public var right(get, never):Float;
-	inline function get_right() return this.right;
-
-	/** The y coordinate of the top of the rectangle */
-	public var top(get, never):Float;
-	inline function get_top() return this.top;
-
-	/** The y coordinate of the bottom of the rectangle */
-	public var bottom(get, never):Float;
-	inline function get_bottom() return this.bottom;
-	
-	/** Whether width or height of this rectangle is equal to zero or not */
-	public var isEmpty(get, never):Bool;
-	inline function get_isEmpty() return this.isEmpty;
-	
-	// Hide functions that set fields, by making private versions
-	inline function destroy() return this.destroy();
-	inline function setSize(w, h) return this.setSize(w, h);
-	inline function setPosition(x, y) return this.setPosition(x, y);
-	inline function set(x = 0.0, y = 0.0, w = 0.0, h = 0.0) return this.set(x, y, w, h);
-	inline function setBounds(x1, y1, x2, y2) return this.setBounds(x1, y1, x2, y2);
-	inline function setAbs(x, y, w, h) return this.setAbs(x, y, w, h);
-	inline function setBoundsAbs(x1 = 0.0, y1 = 0.0, x2 = 0.0, y2 = 0.0) return this.setBoundsAbs(x1, y1, x2, y2);
-	inline function copyFrom(rect) return this.copyFrom(rect);
-	inline function copyFromFlash(rect) return this.copyFromFlash(rect);
-	inline function union(rect) return this.union(rect);
-	inline function floor() return this.floor();
-	inline function ceil() return this.ceil();
-	inline function round() return this.round();
-	inline function fromTwoPoints(p1, p2) return this.fromTwoPoints(p1, p2);
-	inline function unionWithPoint(p) return this.unionWithPoint(p);
-	inline function offset(dx, dy) return this.offset(dx, dy);
-	inline function clipTo(rect) return this.clipTo(rect);
 }

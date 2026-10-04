@@ -4,23 +4,18 @@ package flixel.system;
  * Helper object for semantic versioning.
  * @see   http://semver.org/
  */
+@:build(flixel.system.macros.FlxGitSHA.buildGitSHA("flixel"))
 class FlxVersion
 {
-	public final major:Int;
-	public final minor:Int;
-	public final patch:Int;
-    public final prerelease:Null<String>;
-    public final buildMetadata:Null<String>;
-	public final sha:Null<String>;
+	public var major(default, null):Int;
+	public var minor(default, null):Int;
+	public var patch(default, null):Int;
 
-	inline public function new(major:Int, minor:Int, patch:Int, ?prerelease:String, ?buildMetadata:String, ?sha:String)
+	public function new(Major:Int, Minor:Int, Patch:Int)
 	{
-		this.major = major;
-		this.minor = minor;
-		this.patch = patch;
-		this.prerelease = prerelease;
-		this.buildMetadata = buildMetadata;
-		this.sha = sha;
+		major = Major;
+		minor = Minor;
+		patch = Patch;
 	}
 
 	/**
@@ -28,11 +23,13 @@ class FlxVersion
 	 * e.g. HaxeFlixel 3.0.4.
 	 * If this is a dev version, the git sha is included.
 	 */
-	inline public function toString():String
+	public function toString():String
 	{
-		final displaySha = (sha == null ? "" : "@" + sha.substr(0, 7));
-        final displayPrerelease = (prerelease == null ? "" : '-$prerelease');
-        final displayMeta = (buildMetadata == null ? "" : '+$buildMetadata');
-        return 'HaxeFlixel $major.$minor.$patch$displayPrerelease$displayMeta$displaySha';
+		var sha = FlxVersion.sha;
+		if (sha != "")
+		{
+			sha = "@" + sha.substring(0, 7);
+		}
+		return 'HaxeFlixel $major.$minor.$patch$sha';
 	}
 }

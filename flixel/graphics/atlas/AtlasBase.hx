@@ -1,7 +1,5 @@
 package flixel.graphics.atlas;
 
-import haxe.DynamicAccess;
-
 typedef AtlasBase<T> =
 {
 	frames:T
@@ -28,24 +26,7 @@ typedef AtlasPos =
 /**
  * Rectangle struct use for atlas json parsing, { x:Float, y:Float, w:Float, h:Float }
  */
-@:forward
-abstract AtlasRect(AtlasPos & AtlasSize) from AtlasPos & AtlasSize
-{
-	public var l(get, never):Float; inline function get_l() return this.x;
-	public var r(get, never):Float; inline function get_r() return this.x + this.w;
-	public var t(get, never):Float; inline function get_t() return this.y;
-	public var b(get, never):Float; inline function get_b() return this.y + this.h;
-	
-	overload public inline extern function toFlxRect(rect:flixel.math.FlxRect)
-	{
-		return rect.set(this.x, this.y, this.w, this.h);
-	}
-	
-	overload public inline extern function toFlxRect()
-	{
-		return flixel.math.FlxRect.get(this.x, this.y, this.w, this.h);
-	}
-}
+typedef AtlasRect = AtlasPos & AtlasSize;
 
 typedef AtlasFrame =
 {
@@ -81,35 +62,23 @@ typedef AtlasFrame =
 	var spriteSourceSize:AtlasRect;
 }
 
-abstract HashOrArray<T>(Dynamic) from DynamicAccess<T> from Array<T>
+/**
+ * Internal helper used to enumerate the fields of an atlas that has frame data keyed by frame names.
+ */
+abstract Hash<T>(Dynamic)
 {
-	public inline function isArray()
+	public inline function keyValueIterator():KeyValueIterator<String, T>
 	{
-		return (this is Array);
-	}
-	
-	public inline function isHash()
-	{
-		return !isArray();
-	}
-	
-	@:to
-	public inline function toArray():Array<T>
-	{
-		return this;
-	}
-	
-	@:to
-	public inline function toHash():DynamicAccess<T>
-	{
-		return this;
-	}
-	
-	public inline function iterator():Iterator<T>
-	{
-		if (isArray())
-			return toArray().iterator();
-		else
-			return toHash().iterator();
+		var keys = Reflect.fields(this).iterator();
+		return {
+			hasNext: keys.hasNext,
+			next: () ->
+			{
+				final key = keys.next();
+				return {key: key, value: Reflect.field(this, key)};
+			}
+		};
 	}
 }
+
+typedef HashOrArray<T> = flixel.util.typeLimit.OneOfTwo<AtlasBase.Hash<T>, Array<T>>;

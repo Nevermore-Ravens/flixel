@@ -71,19 +71,12 @@ import openfl.geom.Point;
  */
 @:forward abstract FlxPoint(FlxBasePoint) to FlxBasePoint from FlxBasePoint 
 {
-	
-	/**
-	 * Vector components less than this are considered zero, to account for rounding errors
-	 */
 	public static inline var EPSILON:Float = 0.0000001;
 	public static inline var EPSILON_SQUARED:Float = EPSILON * EPSILON;
-	
-	/**
-	 * Vector lengths less than this are considered zero, to account for rounding errors
-	 */
-	public static inline var EPSILON_LENGTH:Float = EPSILON * FlxMath.SQUARE_ROOT_OF_TWO;
 
 	static var _point1 = new FlxPoint();
+	static var _point2 = new FlxPoint();
+	static var _point3 = new FlxPoint();
 
 	/**
 	 * Recycle or create new FlxPoint.
@@ -163,27 +156,27 @@ import openfl.geom.Point;
 	}
 
 	/**
-	 * Operator that adds the right point to the left point, returning the left point instance.
+	 * Operator that adds two points, returning a new point.
 	 */
 	@:noCompletion
 	@:op(A += B)
 	static inline function plusEqualOp(a:FlxPoint, b:FlxPoint):FlxPoint
 	{
-		return a.add(b);
+		return a.addPoint(b);
 	}
 
 	/**
-	 * Operator that subtracts the right point from the left point, returning the left point instance.
+	 * Operator that subtracts two points, returning a new point.
 	 */
 	@:noCompletion
 	@:op(A -= B)
 	static inline function minusEqualOp(a:FlxPoint, b:FlxPoint):FlxPoint
 	{
-		return a.subtract(b);
+		return a.subtractPoint(b);
 	}
 
 	/**
-	 * Operator that scales a point by float, returning the same point instance.
+	 * Operator that scales a points by float, returning a new point.
 	 */
 	@:noCompletion
 	@:op(A *= B)
@@ -231,7 +224,7 @@ import openfl.geom.Point;
 	}
 
 	/**
-	 * Operator that adds the right point to the left point, returning the left point instance.
+	 * Operator that adds two points, returning a new point.
 	 */
 	@:noCompletion
 	@:op(A += B)
@@ -241,7 +234,7 @@ import openfl.geom.Point;
 	}
 
 	/**
-	 * Operator that subtracts the right point from the left point, returning the left point instance.
+	 * Operator that subtracts two points, returning a new point.
 	 */
 	@:noCompletion
 	@:op(A -= B)
@@ -306,51 +299,22 @@ import openfl.geom.Point;
 
 	public inline function new(x:Float = 0, y:Float = 0)
 	{
-		this = FlxPoint.get(x, y);
+		this = new FlxBasePoint(x, y);
 	}
-	
-	/**
-	 * Set the coordinates of this point object.
-	 *
-	 * @param   n  The X and Y coordinate of the point in space.
-	 */
-	public inline function setXY(n:Float):FlxPoint
-	{
-		return set(n, n);
-	}
-	
-	
+
 	/**
 	 * Set the coordinates of this point object.
 	 *
 	 * @param   x  The X-coordinate of the point in space.
 	 * @param   y  The Y-coordinate of the point in space.
 	 */
-	overload public inline extern function set(x:Float, y:Float):FlxPoint
+	public inline function set(x:Float = 0, y:Float = 0):FlxPoint
 	{
-		return this.set(x, y);
+		this.x = x;
+		this.y = y;
+		return this;
 	}
-	
-	/**
-	 * Sets the x coordinate of this point and zeroes the y coordinate.
-	 *
-	 * @param   x  The X-coordinate of the point in space.
-	 */
-	@:deprecated("set(n) with one arg, is deprecated, use the two-arged set(n, 0), instead") // 6.2.0
-	overload public inline extern function set(x:Float):FlxPoint
-	{
-		return set(x, 0);
-	}
-	
-	/**
-	 * Set the coordinates of this point to zero.
-	 */
-	// @:deprecated("set() with no args, is deprecated, use the two-arged set(0, 0), setXY(0) or zero(), instead")
-	overload public inline extern function set():FlxPoint
-	{
-		return set(0, 0);
-	}
-	
+
 	/**
 	 * Adds to the coordinates of this point.
 	 *
@@ -358,47 +322,24 @@ import openfl.geom.Point;
 	 * @param   y  Amount to add to y
 	 * @return  This point.
 	 */
-	public overload extern inline function add(x:Float = 0, y:Float = 0):FlxPoint
+	public inline function add(x:Float = 0, y:Float = 0):FlxPoint
 	{
-		return set(this.x + x, this.y + y);
+		this.x += x;
+		this.y += y;
+		return this;
 	}
 
 	/**
 	 * Adds the coordinates of another point to the coordinates of this point.
-	 * @since 6.0.0
 	 *
 	 * @param   point  The point to add to this point
 	 * @return  This point.
 	 */
-	public overload inline extern function add(point:FlxPoint):FlxPoint
+	public inline function addPoint(point:FlxPoint):FlxPoint
 	{
 		add(point.x, point.y);
 		point.putWeak();
 		return this;
-	}
-	
-	/**
-	 * Adds the coordinates of another point to the coordinates of this point.
-	 * @since 6.0.0
-	 *
-	 * @param   p  Any Point.
-	 * @return  A reference to the altered point parameter.
-	 */
-	public overload inline extern function add(p:Point):FlxPoint
-	{
-		return add(p.x, p.y);
-	}
-	
-	/**
-	 * Adds the coordinates of another point to the coordinates of this point.
-	 *
-	 * @param   point  The point to add to this point
-	 * @return  This point.
-	 */
-	@:deprecated("addPoint is deprecated, use add(point), instead")// 6.1.2
-	public inline function addPoint(point:FlxPoint):FlxPoint
-	{
-		return add(point);
 	}
 
 	/**
@@ -408,35 +349,10 @@ import openfl.geom.Point;
 	 * @param   y  Amount to subtract from y
 	 * @return  This point.
 	 */
-	public overload inline extern function subtract(x:Float = 0, y:Float = 0):FlxPoint
+	public inline function subtract(x:Float = 0, y:Float = 0):FlxPoint
 	{
-		return set(this.x - x, this.y - y);
-	}
-
-	/**
-	 * Subtracts the coordinates of another point from the coordinates of this point.
-	 * @since 6.0.0
-	 *
-	 * @param   point  The point to subtract from this point
-	 * @return  This point.
-	 */
-	public overload inline extern function subtract(point:FlxPoint):FlxPoint
-	{
-		subtract(point.x, point.y);
-		point.putWeak();
-		return this;
-	}
-
-	/**
-	 * Subtracts the coordinates of another point from the coordinates of this point.
-	 * @since 6.0.0
-	 *
-	 * @param   point  The point to subtract from this point
-	 * @return  This point.
-	 */
-	public overload inline extern function subtract(point:Point):FlxPoint
-	{
-		subtract(point.x, point.y);
+		this.x -= x;
+		this.y -= y;
 		return this;
 	}
 
@@ -446,7 +362,6 @@ import openfl.geom.Point;
 	 * @param   point  The point to subtract from this point
 	 * @return  This point.
 	 */
-	@:deprecated("subtractPoint is deprecated, use subtract(point), instead")// 6.1.2
 	public inline function subtractPoint(point:FlxPoint):FlxPoint
 	{
 		subtract(point.x, point.y);
@@ -457,58 +372,26 @@ import openfl.geom.Point;
 	/**
 	 * Scale this point.
 	 *
-	 * @param   x  The x scale coefficient
-	 * @param   y  The y scale coefficient
-	 * @return  this point
+	 * @param   x - scale x coefficient
+	 * @param   y - scale y coefficient, if omitted, x is used
+	 * @return  scaled point
 	 */
-	public overload inline extern function scale(x:Float, y:Float):FlxPoint
+	public inline function scale(x:Float, ?y:Float):FlxPoint
 	{
-		return set(this.x * x, this.y * y);
-	}
-	
-	/**
-	 * Scale this point.
-	 * @since 6.0.0
-	 *
-	 * @param   amount  The scale coefficient
-	 * @return  this point
-	 */
-	public overload inline extern function scale(amount:Float):FlxPoint
-	{
-		return scale(amount, amount);
-	}
-	
-	/**
-	 * Scale this point by another point.
-	 * @since 6.0.0
-	 *
-	 * @param   point  The x and y scale coefficient
-	 * @return  this point
-	 */
-	public overload inline extern function scale(point:FlxPoint):FlxPoint
-	{
-		return scale(point.x, point.y);
-	}
-	
-	/**
-	 * Scale this point by another point.
-	 * @since 6.0.0
-	 *
-	 * @param   point  The x and y scale coefficient
-	 * @return  this point
-	 */
-	public overload inline extern function scale(point:Point):FlxPoint
-	{
-		return scale(point.x, point.y);
+		if (y == null)
+			y = x;
+
+		this.x *= x;
+		this.y *= y;
+		return this;
 	}
 
 	/**
 	 * Scale this point by another point.
 	 *
-	 * @param   point  The x and y scale coefficient
+	 * @param   point - The x and y scale coefficient
 	 * @return  scaled point
 	 */
-	@:deprecated("scalePoint is deprecated, use scale(point), instead")// 6.1.2
 	public inline function scalePoint(point:FlxPoint):FlxPoint
 	{
 		scale(point.x, point.y);
@@ -535,7 +418,7 @@ import openfl.geom.Point;
 	 */
 	public inline function addNew(p:FlxPoint):FlxPoint
 	{
-		return clone().add(p);
+		return clone().addPoint(p);
 	}
 
 	/**
@@ -546,7 +429,7 @@ import openfl.geom.Point;
 	 */
 	public inline function subtractNew(p:FlxPoint):FlxPoint
 	{
-		return clone().subtract(p);
+		return clone().subtractPoint(p);
 	}
 
 	/**
@@ -555,7 +438,7 @@ import openfl.geom.Point;
 	 * @param   p  Any FlxPoint.
 	 * @return  A reference to itself.
 	 */
-	public overload inline extern function copyFrom(p:FlxPoint):FlxPoint
+	public inline function copyFrom(p:FlxPoint):FlxPoint
 	{
 		set(p.x, p.y);
 		p.putWeak();
@@ -564,35 +447,22 @@ import openfl.geom.Point;
 
 	/**
 	 * Helper function, just copies the values from the specified Flash point.
-	 * @since 6.0.0
 	 *
 	 * @param   p  Any Point.
 	 * @return  A reference to itself.
 	 */
-	public overload inline extern function copyFrom(p:Point):FlxPoint
-	{
-		return set(p.x, p.y);
-	}
-
-	/**
-	 * Helper function, just copies the values from the specified Flash point.
-	 *
-	 * @param   p  Any Point.
-	 * @return  A reference to itself.
-	 */
-	@:deprecated("copyFromFlash is deprecated, use copyFrom, instead")// 6.1.2
 	public inline function copyFromFlash(p:Point):FlxPoint
 	{
-		return set(p.x, p.y);
+		return this.set(p.x, p.y);
 	}
 
 	/**
 	 * Helper function, just copies the values from this point to the specified point.
 	 *
-	 * @param   p  An optional point to copy this point to
-	 * @return  The new point
+	 * @param   p   optional point to copy this point to
+	 * @return  copy of this point
 	 */
-	public overload inline extern function copyTo(?p:FlxPoint):FlxPoint
+	public inline function copyTo(?p:FlxPoint):FlxPoint
 	{
 		if (p == null)
 		{
@@ -603,28 +473,20 @@ import openfl.geom.Point;
 
 	/**
 	 * Helper function, just copies the values from this point to the specified Flash point.
-	 * @since 6.0.0
-	 *
-	 * @param   p  The point to copy this point to
-	 * @return  The new point
-	 */
-	public overload inline extern function copyTo(p:Point):Point
-	{
-		p.x = x;
-		p.y = y;
-		return p;
-	}
-
-	/**
-	 * Helper function, just copies the values from this point to the specified Flash point.
 	 *
 	 * @param   p  Any Point.
 	 * @return  A reference to the altered point parameter.
 	 */
-	@:deprecated("copyToFlash is deprecated, use copyTo, instead")// 6.1.2
 	public inline function copyToFlash(?p:Point):Point
 	{
-		return copyTo(p != null ? p : new Point());
+		if (p == null)
+		{
+			p = new Point();
+		}
+
+		p.x = x;
+		p.y = y;
+		return p;
 	}
 
 	/**
@@ -660,7 +522,9 @@ import openfl.geom.Point;
 	 */
 	public inline function floor():FlxPoint
 	{
-		return set(Math.floor(x), Math.floor(y));
+		x = Math.floor(x);
+		y = Math.floor(y);
+		return this;
 	}
 
 	/**
@@ -668,7 +532,9 @@ import openfl.geom.Point;
 	 */
 	public inline function ceil():FlxPoint
 	{
-		return set(Math.ceil(x), Math.ceil(y));
+		x = Math.ceil(x);
+		y = Math.ceil(y);
+		return this;
 	}
 
 	/**
@@ -676,7 +542,9 @@ import openfl.geom.Point;
 	 */
 	public inline function round():FlxPoint
 	{
-		return set(Math.round(x), Math.round(y));
+		x = Math.round(x);
+		y = Math.round(y);
+		return this;
 	}
 
 	/**
@@ -705,6 +573,19 @@ import openfl.geom.Point;
 	}
 
 	/**
+	 * Rotates this point clockwise in 2D space around another point by the given degrees.
+	 *
+	 * @param   pivot    The pivot you want to rotate this point around
+	 * @param   degrees  Rotate the point by this many degrees clockwise.
+	 * @return  A FlxPoint containing the coordinates of the rotated point.
+	 */
+	@:deprecated("rotate is deprecated, use pivotDegrees")
+	public function rotate(pivot:FlxPoint, degrees:Float):FlxPoint
+	{
+		return pivotDegrees(pivot, degrees);
+	}
+
+	/**
 	 * Rotates this point clockwise in 2D space around another point by the given radians.
 	 * Note: To rotate a point around 0,0 you can use `p.radians += angle`
 	 * @since 5.0.0
@@ -715,7 +596,7 @@ import openfl.geom.Point;
 	 */
 	public function pivotRadians(pivot:FlxPoint, radians:Float):FlxPoint
 	{
-		_point1.copyFrom(this).subtract(pivot);
+		_point1.copyFrom(this).subtractPoint(pivot);
 		_point1.radians += radians;
 		set(_point1.x + pivot.x, _point1.y + pivot.y);
 		pivot.putWeak();
@@ -742,47 +623,12 @@ import openfl.geom.Point;
 	 * @param   point  A FlxPoint object to calculate the distance to.
 	 * @return  The distance between the two points as a Float.
 	 */
-	public overload inline extern function distanceTo(point:FlxPoint):Float
+	public function distanceTo(point:FlxPoint):Float
 	{
-		final result = distanceTo(point.x, point.y);
+		var dx:Float = x - point.x;
+		var dy:Float = y - point.y;
 		point.putWeak();
-		return result;
-	}
-	
-	/**
-	 * Calculate the distance to another position
-	 * @since 6.0.0
-	 *
-	 * @return  The distance between the two positions as a Float.
-	 */
-	public overload inline extern function distanceTo(x:Float, y:Float):Float
-	{
-		return Math.sqrt(distanceSquaredTo(x, y));
-	}
-	
-	/**
-	 * Calculate the squared distance to another point.
-	 * @since 6.0.0
-	 *
-	 * @param   point  A FlxPoint object to calculate the distance to.
-	 * @return  The distance between the two points as a Float.
-	 */
-	public overload inline extern function distanceSquaredTo(point:FlxPoint):Float
-	{
-		final result = distanceSquaredTo(point.x, point.y);
-		point.putWeak();
-		return result;
-	}
-	
-	/**
-	 * Calculate the distance to another position
-	 * @since 6.0.0
-	 *
-	 * @return  The distance between the two positions as a Float.
-	 */
-	public overload inline extern function distanceSquaredTo(x:Float, y:Float):Float
-	{
-		return (this.x - x) * (this.x - x) + (this.y - y) * (this.y - y);
+		return FlxMath.vectorLength(dx, dy);
 	}
 
 	/**
@@ -837,6 +683,56 @@ import openfl.geom.Point;
 		return point.degreesTo(this);
 	}
 
+	/** DEPRECATED
+	 * 
+	 * Calculates the angle between this and another point. 0 degrees points straight up.
+	 * 
+	 * Note: Every other flixel function treats straight right as 0 degrees.
+	 * 
+	 * Also Note: The result is very innacurate.
+	 *
+	 * @param   point   The other point.
+	 * @return  The angle in degrees, between -180 and 180.
+	 * 
+	 * @see [Flixel 5.0.0 Migration guide](https://github.com/HaxeFlixel/flixel/wiki/Flixel-5.0.0-Migration-guide)
+	 */
+	@:deprecated("angleBetween is deprecated, use degreesTo instead")
+	public function angleBetween(point:FlxPoint):Float
+	{
+		var x:Float = point.x - x;
+		var y:Float = point.y - y;
+		var angle:Float = 0;
+
+		if ((x != 0) || (y != 0))
+		{
+			var c1:Float = Math.PI * 0.25;
+			var c2:Float = 3 * c1;
+			var ay:Float = (y < 0) ? -y : y;
+
+			if (x >= 0)
+			{
+				angle = c1 - c1 * ((x - ay) / (x + ay));
+			}
+			else
+			{
+				angle = c2 - c1 * ((x + ay) / (ay - x));
+			}
+			angle = ((y < 0) ? -angle : angle) * FlxAngle.TO_DEG;
+
+			if (angle > 90)
+			{
+				angle = angle - 270;
+			}
+			else
+			{
+				angle += 90;
+			}
+		}
+
+		point.putWeak();
+		return angle;
+	}
+
 	/**
 	 * Applies transformation matrix to this point
 	 * @param   matrix  transformation matrix
@@ -883,12 +779,7 @@ import openfl.geom.Point;
 	 */
 	inline function dotProductWeak(p:FlxPoint):Float
 	{
-		return dotProductXY(p.x, p.y);
-	}
-	
-	inline function dotProductXY(x:Float, y:Float):Float
-	{
-		return this.x * x + this.y * y;
+		return x * p.x + y * p.y;
 	}
 
 	/**
@@ -899,10 +790,9 @@ import openfl.geom.Point;
 	 */
 	public inline function dotProdWithNormalizing(p:FlxPoint):Float
 	{
-		final length = p.length;
-		final result = length < EPSILON_LENGTH ? 0 : dotProductXY(p.x / length, p.y / length);
+		var normalized:FlxPoint = p.clone(_point1).normalize();
 		p.putWeak();
-		return result;
+		return dotProductWeak(normalized);
 	}
 
 	/**
@@ -973,8 +863,7 @@ import openfl.geom.Point;
 	 */
 	public inline function isZero():Bool
 	{
-		// i.e: x*x < EPSILON_SQUARED && y*y < EPSILON_SQUARED;
-		return lengthSquared < 2 * EPSILON_SQUARED;
+		return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON;
 	}
 
 	/**
@@ -982,7 +871,8 @@ import openfl.geom.Point;
 	 */
 	public inline function zero():FlxPoint
 	{
-		return set(0, 0);
+		x = y = 0;
+		return this;
 	}
 
 	/**
@@ -1015,7 +905,12 @@ import openfl.geom.Point;
 	{
 		var s:Float = Math.sin(rads);
 		var c:Float = Math.cos(rads);
-		return set(x * c - y * s, x * s + y * c);
+		var tempX:Float = x;
+
+		x = tempX * c - y * s;
+		y = tempX * s + y * c;
+
+		return this;
 	}
 
 	/**
@@ -1038,7 +933,10 @@ import openfl.geom.Point;
 	 */
 	public inline function rotateWithTrig(sin:Float, cos:Float):FlxPoint
 	{
-		return set(x * cos - y * sin, x * sin + y * cos);
+		var tempX:Float = x;
+		x = tempX * cos - y * sin;
+		y = tempX * sin + y * cos;
+		return this;
 	}
 
 	/**
@@ -1052,7 +950,9 @@ import openfl.geom.Point;
 	 */
 	public function setPolarRadians(length:Float, radians:Float):FlxPoint
 	{
-		return set(length * Math.cos(radians), length * Math.sin(radians));
+		x = length * Math.cos(radians);
+		y = length * Math.sin(radians);
+		return this;
 	}
 
 	/**
@@ -1078,7 +978,7 @@ import openfl.geom.Point;
 		{
 			p = get();
 		}
-		p.set(rx, ry);
+		p.set(-y, x);
 		return p;
 	}
 
@@ -1091,7 +991,7 @@ import openfl.geom.Point;
 		{
 			p = get();
 		}
-		p.set(lx, ly);
+		p.set(y, -x);
 		return p;
 	}
 
@@ -1100,12 +1000,14 @@ import openfl.geom.Point;
 	 */
 	public inline function negate():FlxPoint
 	{
-		return set(x * -1, y * -1);
+		x *= -1;
+		y *= -1;
+		return this;
 	}
 
-	public inline function negateNew(?result:FlxPoint):FlxPoint
+	public inline function negateNew():FlxPoint
 	{
-		return clone(result).negate();
+		return clone().negate();
 	}
 
 	/**
@@ -1181,12 +1083,7 @@ import openfl.geom.Point;
 	 */
 	inline function perpProductWeak(p:FlxPoint):Float
 	{
-		return perpProductXY(p.x, p.y);
-	}
-	
-	inline function perpProductXY(x:Float, y:Float):Float
-	{
-		return lx * x + ly * y;
+		return lx * p.x + ly * p.y;
 	}
 
 	/**
@@ -1347,36 +1244,21 @@ import openfl.geom.Point;
 
 	/**
 	 * The distance between points
-	 * @since 6.0.0
 	 */
-	public overload inline extern function dist(x:Float, y:Float):Float
+	public inline function dist(p:FlxPoint):Float
 	{
-		return distanceTo(x, y);
+		return Math.sqrt(distSquared(p));
 	}
 
 	/**
-	 * The distance between points
-	 */
-	public overload inline extern function dist(p:FlxPoint):Float
-	{
-		return distanceTo(p);
-	}
-	
-	/**
 	 * The squared distance between points
 	 */
-	public overload inline extern function distSquared(p:FlxPoint):Float
+	public inline function distSquared(p:FlxPoint):Float
 	{
-		return distanceSquaredTo(p);
-	}
-	
-	/**
-	 * The squared distance between positions
-	 * @since 6.0.0
-	 */
-	public overload inline extern function distSquared(x:Float, y:Float):Float
-	{
-		return distanceSquaredTo(x, y);
+		var dx:Float = p.x - x;
+		var dy:Float = p.y - y;
+		p.putWeak();
+		return dx * dx + dy * dy;
 	}
 
 	/**
@@ -1389,7 +1271,8 @@ import openfl.geom.Point;
 	public inline function bounce(normal:FlxPoint, bounceCoeff:Float = 1):FlxPoint
 	{
 		var d:Float = (1 + bounceCoeff) * dotProductWeak(normal);
-		set(x - d * normal.x, y - d * normal.y);
+		x -= d * normal.x;
+		y -= d * normal.y;
 		normal.putWeak();
 		return this;
 	}
@@ -1404,16 +1287,16 @@ import openfl.geom.Point;
 	 */
 	public inline function bounceWithFriction(normal:FlxPoint, bounceCoeff:Float = 1, friction:Float = 0):FlxPoint
 	{
-		final dp = dotProductWeak(normal);
-		final bounceX = -normal.x * dp;
-		final bounceY = -normal.y * dp;
-		final pp = perpProductWeak(normal);
-		final frictionX = normal.rx * pp;
-		final frictionY = normal.ry * pp;
-		
+		var p1:FlxPoint = projectToNormalizedWeak(normal.rightNormal(_point3), _point1);
+		var p2:FlxPoint = projectToNormalizedWeak(normal, _point2);
+		var bounceX:Float = -p2.x;
+		var bounceY:Float = -p2.y;
+		var frictionX:Float = p1.x;
+		var frictionY:Float = p1.y;
+		x = bounceX * bounceCoeff + frictionX * friction;
+		y = bounceY * bounceCoeff + frictionY * friction;
 		normal.putWeak();
-		
-		return set(bounceX * bounceCoeff + frictionX * friction, bounceY * bounceCoeff + frictionY * friction);
+		return this;
 	}
 
 	/**
@@ -1429,8 +1312,8 @@ import openfl.geom.Point;
 	/**
 	 * Copies this point.
 	 *
-	 * @param   p  An optional point to copy this point to
-	 * @return  The new point
+	 * @param   p   optional point to copy this point to
+	 * @return  copy of this point
 	 */
 	public inline function clone(?p:FlxPoint):FlxPoint
 	{
@@ -1483,7 +1366,8 @@ import openfl.geom.Point;
 		if (!isZero())
 		{
 			var a:Float = radians;
-			set(l * Math.cos(a), l * Math.sin(a));
+			x = l * Math.cos(a);
+			y = l * Math.sin(a);
 		}
 		return l;
 	}
@@ -1513,7 +1397,8 @@ import openfl.geom.Point;
 	{
 		var len:Float = length;
 
-		set(len * Math.cos(rads), len * Math.sin(rads));
+		x = len * Math.cos(rads);
+		y = len * Math.sin(rads);
 		return rads;
 	}
 
@@ -1603,7 +1488,7 @@ class FlxBasePoint implements IFlxPooled
 	{
 		set(x, y);
 	}
-	
+
 	/**
 	 * Set the coordinates of this point object.
 	 *
@@ -1616,7 +1501,7 @@ class FlxBasePoint implements IFlxPooled
 		this.y = y;
 		return this;
 	}
-	
+
 	/**
 	 * Add this FlxBasePoint to the recycling pool.
 	 */
@@ -1688,64 +1573,6 @@ class FlxBasePoint implements IFlxPooled
 	}
 }
 
-/**
- * A point that, once set, cannot be changed. Useful for objects
- * that want to expose a readonly `x` and `y` value
- * @since 6.0.0
- */
-@:forward
-@:forward.new
-abstract FlxReadOnlyPoint(FlxPoint) from FlxPoint
-{
-	public var x(get, never):Float;
-	public var y(get, never):Float;
-	
-	/** Length of the point */
-	public var length(get, never):Float;
-	
-	/** The angle formed by the point with the horizontal axis (in degrees) */
-	public var degrees(get, never):Float;
-
-	/** The angle formed by the point with the horizontal axis (in radians) */
-	public var radians(get, never):Float;
-	
-	inline function get_x():Float return this.x;
-	inline function get_y():Float return this.y;
-	inline function get_length():Float return this.length;
-	inline function get_radians():Float return this.radians;
-	inline function get_degrees():Float return this.degrees;
-	
-	// hide underlying mutators
-	overload inline extern function set(x, y):FlxReadOnlyPoint return this.set(x, y);
-	overload inline extern function set(x):FlxReadOnlyPoint return this.set(x);
-	overload inline extern function set():FlxReadOnlyPoint return this.set();
-	inline function add(x = 0, y = 0):FlxReadOnlyPoint return this.add(x, y);
-	inline function addPoint(point):FlxReadOnlyPoint return this.add(point);
-	inline function subtract(x = 0, y = 0):FlxReadOnlyPoint return this.subtract(x, y);
-	inline function subtractPoint(point):FlxReadOnlyPoint return this.subtract(point);
-	inline function scale(x = 0, y = 0):FlxReadOnlyPoint return this.scale(x, y);
-	inline function scalePoint(point):FlxReadOnlyPoint return this.scale(point);
-	inline function copyFrom(point):FlxReadOnlyPoint return this.copyFrom(point);
-	inline function copyFromFlash(point):FlxReadOnlyPoint return this.copyFrom(point);
-	inline function floor():FlxReadOnlyPoint return this.floor();
-	inline function ceil():FlxReadOnlyPoint return this.ceil();
-	inline function round():FlxReadOnlyPoint return this.round();
-	inline function rotate(pivot, degrees):FlxReadOnlyPoint return this.pivotDegrees(pivot, degrees);
-	inline function pivotRadians(pivot, radians):FlxReadOnlyPoint return this.pivotRadians(pivot, radians);
-	inline function pivotDegrees(pivot, degrees):FlxReadOnlyPoint return this.pivotDegrees(pivot, degrees);
-	inline function transform(matrix):FlxReadOnlyPoint return this.transform(matrix);
-	inline function zero():FlxReadOnlyPoint return this.zero();
-	inline function normalize():FlxReadOnlyPoint return this.normalize();
-	inline function rotateByRadians(rads):FlxReadOnlyPoint return this.rotateByRadians(rads);
-	inline function rotateByDegrees(degs):FlxReadOnlyPoint return this.rotateByDegrees(degs);
-	inline function rotateWithTrig(sin, cos):FlxReadOnlyPoint return this.rotateWithTrig(sin, cos);
-	inline function setPolarRadians(length, radians):FlxReadOnlyPoint return this.setPolarRadians(length, radians);
-	inline function setPolarDegrees(length, degrees):FlxReadOnlyPoint return this.setPolarDegrees(length, degrees);
-	inline function negate():FlxReadOnlyPoint return this.negate();
-	inline function truncate(max):FlxReadOnlyPoint return this.truncate(max);
-	inline function bounce(normal, coeff = 1.0):FlxReadOnlyPoint return this.bounce(normal, coeff);
-	inline function bounceWithFriction(normal, coeff = 1.0, friction = 0.0):FlxReadOnlyPoint return this.bounce(normal, coeff);
-}
 
 /**
  * A FlxPoint that calls a function when set_x(), set_y() or set() is called. Used in FlxSpriteGroup.
@@ -1754,8 +1581,8 @@ abstract FlxReadOnlyPoint(FlxPoint) from FlxPoint
 class FlxCallbackPoint extends FlxBasePoint
 {
 	var _setXCallback:FlxPoint->Void;
-	var _setYCallback:Null<FlxPoint->Void>;
-	var _setXYCallback:Null<FlxPoint->Void>;
+	var _setYCallback:FlxPoint->Void;
+	var _setXYCallback:FlxPoint->Void;
 
 	/**
 	 * If you only specify one callback function, then the remaining two will use the same.
@@ -1767,60 +1594,41 @@ class FlxCallbackPoint extends FlxBasePoint
 	public function new(setXCallback:FlxPoint->Void, ?setYCallback:FlxPoint->Void, ?setXYCallback:FlxPoint->Void)
 	{
 		super();
-		
-		// TODO: operator overloading?
-		if (setXCallback != null && setYCallback == null && setXYCallback == null)
+
+		_setXCallback = setXCallback;
+		_setYCallback = setXYCallback;
+		_setXYCallback = setXYCallback;
+
+		if (_setXCallback != null)
 		{
-			_setXYCallback = setXCallback;
-		}
-		else
-		{
-			_setXCallback = setXCallback;
-			_setYCallback = setYCallback;
-			_setXYCallback = setXYCallback;
+			if (_setYCallback == null)
+				_setYCallback = setXCallback;
+			if (_setXYCallback == null)
+				_setXYCallback = setXCallback;
 		}
 	}
 
-	override function set(x:Float = 0, y:Float = 0)
+	override public function set(x:Float = 0, y:Float = 0):FlxCallbackPoint
 	{
-		@:bypassAccessor this.x = x;
-		@:bypassAccessor this.y = y;
-		
-		if (_setXCallback != null)
-			_setXCallback(this);
-		
-		if (_setYCallback != null)
-			_setYCallback(this);
-		
+		super.set(x, y);
 		if (_setXYCallback != null)
 			_setXYCallback(this);
-		
 		return this;
 	}
 
 	override function set_x(value:Float):Float
 	{
 		super.set_x(value);
-		
 		if (_setXCallback != null)
 			_setXCallback(this);
-		
-		if (_setXYCallback != null)
-			_setXYCallback(this);
-		
 		return value;
 	}
 
 	override function set_y(value:Float):Float
 	{
 		super.set_y(value);
-		
 		if (_setYCallback != null)
 			_setYCallback(this);
-		
-		if (_setXYCallback != null)
-			_setXYCallback(this);
-		
 		return value;
 	}
 

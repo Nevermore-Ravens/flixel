@@ -1,17 +1,17 @@
 package flixel.input.gamepad;
 
 import flixel.input.FlxInput.FlxInputState;
+import flixel.util.FlxSignal.FlxTypedSignal;
 import flixel.input.gamepad.FlxGamepad.FlxGamepadModel;
 import flixel.util.FlxDestroyUtil;
-import flixel.util.FlxSignal.FlxTypedSignal;
 #if FLX_JOYSTICK_API
 import flixel.FlxG;
 import flixel.math.FlxPoint;
 import openfl.events.JoystickEvent;
 #elseif FLX_GAMEINPUT_API
-import openfl.events.GameInputEvent;
 import openfl.ui.GameInput;
 import openfl.ui.GameInputDevice;
+import openfl.events.GameInputEvent;
 
 using flixel.util.FlxStringUtil;
 #end
@@ -50,13 +50,7 @@ class FlxGamepadManager implements IFlxInputManager
 	 * @since 4.6.0
 	 */
 	public var deviceDisconnected(default, null):FlxTypedSignal<FlxGamepad->Void>;
-	
-	/**
-	 * Whether the bottom or right face button is ACCEPT
-	 * @since 5.9.0
-	 */
-	public var acceptMode:FlxGamepadAcceptMode = BOTTOM;
-	
+
 	/**
 	 * Stores all gamepads - can have null entries, but index matches event.device
 	 */
@@ -388,19 +382,6 @@ class FlxGamepadManager implements IFlxInputManager
 		deviceConnected.dispatch(gamepad);
 	}
 
-	static final productReg = ~/$(.+?)\(STANDARD GAMEPAD Vendor: ([0-9a-f]+?) Product: ([0-9a-f]+?)\)^/;
-	static final productMap =
-	[
-		"057e:0306" => WII_REMOTE,
-		"057e:2006" => SWITCH_JOYCON_LEFT,
-		"057e:2007" => SWITCH_JOYCON_RIGHT,
-		"057e:2009" => SWITCH_PRO,
-		"057e:200e" => SWITCH_PRO,          // Joy-Con l+r
-		"054c:05c4" => PS4,                 // Dualshock4
-		"054c:09cc" => PS4,                 // Dualshock4
-		"054c:0ba0" => PS4,                 // Dualshock4UsbReceiver
-	];
-	
 	function getModelFromDeviceName(name:String):FlxGamepadModel
 	{
 		// If we're actually running on console hardware, we know what controller hardware you're using
@@ -416,22 +397,13 @@ class FlxGamepadManager implements IFlxInputManager
 		return XINPUT;
 		#end
 
-		if (productReg.match(name))
-		{
-			final id = productReg.matched(2) + ":" + productReg.matched(3);
-			if (productMap.exists(id))
-				return productMap[id];
-		}
-
 		// "Sony PLAYSTATION(R)3 Controller" is the PS3 controller, but that is not supported as its PC drivers are terrible,
 		// and the most popular tools just turn it into a 360 controller
 
 		name = name.toLowerCase().remove("-").remove("_");
 		return if (name.contains("ouya"))
 				OUYA; // "OUYA Game Controller"
-			else if (name.contains("ps5") || name.contains('dualsense'))
-				PS5;
-			else if (name.contains("wireless controller") || name.contains("ps4") || name.contains("dualshock 4"))
+			else if (name.contains("wireless controller") || name.contains("ps4"))
 				PS4; // "Wireless Controller" or "PS4 controller"
 			else if (name.contains("logitech"))
 				LOGITECH;
@@ -443,7 +415,7 @@ class FlxGamepadManager implements IFlxInputManager
 				WII_REMOTE; // WiiRemote w/o  motion plus
 			else if (name.contains("mayflash wiimote pc adapter"))
 				MAYFLASH_WII_REMOTE; // WiiRemote paired to MayFlash DolphinBar (with or w/o motion plus)
-			else if (name.contains("pro controller") || name.contains("joycon l+r") || name.contains("joycon (l/r)"))
+			else if (name.contains("pro controller") || name.contains("joycon l+r"))
 				SWITCH_PRO;
 			else if (name.contains("joycon (l)"))
 				SWITCH_JOYCON_LEFT;
@@ -622,28 +594,4 @@ class FlxGamepadManager implements IFlxInputManager
 				count++;
 		return count;
 	}
-}
-
-/**
- * @since 5.9.0
- */
-enum FlxGamepadAcceptMode
-{
-	/**
-	 * The bottom face button is `ACCEPT` and the right face button is `CANCEL`.
-	 * This is common on western-style consoles, like XBox or American PS4/5
-	 */
-	BOTTOM;
-	
-	/**
-	 * The right face button is `ACCEPT` and the bottom face button is `CANCEL`.
-	 * This is common in Japanese PS4/5 consoles, and Nintendo consoles
-	 */
-	RIGHT;
-	
-	/**
-	 * Behaves like `BOTTOM` for nearly all gamepads, but `RIGHT` for specific mappings,
-	 * namely Nintendo Switch gamepads
-	 */
-	USE_MAPPING;
 }

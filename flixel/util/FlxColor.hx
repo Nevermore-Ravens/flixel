@@ -2,7 +2,6 @@ package flixel.util;
 
 import flixel.math.FlxMath;
 import flixel.system.macros.FlxMacroUtil;
-import flixel.tweens.FlxEase;
 
 /**
  * Class representing a color, based on Int. Provides a variety of methods for creating and converting colors.
@@ -80,12 +79,6 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	 * The lightness of the color (from 0 to 1)
 	 */
 	public var lightness(get, set):Float;
-
-	/**
-	 * The luminance, or "percieved brightness" of a color (from 0 to 1)
-	 * RGB -> Luma calculation from https://www.w3.org/TR/AERT/#color-contrast
-	 */
-	public var luminance(get, never):Float;
 
 	static var COLOR_REGEX = ~/^(0x|#)(([A-F0-9]{2}){3,4})$/i;
 
@@ -259,13 +252,16 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	 * @param Ease An optional easing function, such as those provided in FlxEase
 	 * @return An array of colors of length Steps, shifting from Color1 to Color2
 	 */
-	public static function gradient(Color1:FlxColor, Color2:FlxColor, Steps:Int, ?Ease:EaseFunction):Array<FlxColor>
+	public static function gradient(Color1:FlxColor, Color2:FlxColor, Steps:Int, ?Ease:Float->Float):Array<FlxColor>
 	{
 		var output = new Array<FlxColor>();
 
 		if (Ease == null)
 		{
-			Ease = FlxEase.linear;
+			Ease = function(t:Float):Float
+			{
+				return t;
+			}
 		}
 
 		for (step in 0...Steps)
@@ -301,71 +297,6 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	public static inline function subtract(lhs:FlxColor, rhs:FlxColor):FlxColor
 	{
 		return FlxColor.fromRGB(lhs.red - rhs.red, lhs.green - rhs.green, lhs.blue - rhs.blue);
-	}
-	
-	/**
-	 * Returns the sum of the absolute differences of each channel between this and the specified color.
-	 * For instance `FlxColor.RED.getDistance(0xFFf80080)` is `135`, or `(0xff - 0xf8) + (0x80 - 0x00)`
-	 * 
-	 * @since 6.2.0
-	 */
-	public function getDistance(color:FlxColor)
-	{
-		inline function abs(n:Int):Int
-		{
-			return n < 0 ? -n : n;
-		}
-		
-		return abs(color.red - red)
-			+ abs(color.green - green)
-			+ abs(color.blue - blue)
-			+ abs(color.alpha - alpha);
-	}
-	
-	/**
-	 * Searches the list of colors and returns the one whos rgba components are closets to this color.
-	 * If colors is empty, the result is `null`
-	 * 
-	 * @since 6.2.0
-	 */
-	overload public inline extern function nearest(colors:Array<FlxColor>):Null<FlxColor>
-	{
-		return getNearest(this, colors.iterator());
-	}
-	
-	/**
-	 * Searches the list of colors and returns the one whos rgba components are closets to this color.
-	 * If colors is empty, the result is `null`
-	 * 
-	 * @since 6.2.0
-	 */
-	overload public inline extern function nearest(colors:Iterator<FlxColor>):Null<FlxColor>
-	{
-		return getNearest(this, colors);
-	}
-	
-	static function getNearest(target:FlxColor, colors:Iterator<FlxColor>):Null<FlxColor>
-	{
-		var closest:Null<FlxColor> = null;
-		var closestDiff = -1;
-		
-		for (color in colors)
-		{
-			if (color == target)
-			{
-				closest = target;
-				break;
-			}
-			
-			final diff = color.getDistance(target);
-			if (closest == null || diff < closestDiff)
-			{
-				closest = color;
-				closestDiff = diff;
-			}
-		}
-		
-		return closest;
 	}
 
 	/**
@@ -429,7 +360,6 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	 *
 	 * @return A 24 bit version of this color
 	 */
-	@:deprecated("to24Bit() is deprecated, use rgb field, instead.")
 	public inline function to24Bit():FlxColor
 	{
 		return this & 0xffffff;
@@ -438,26 +368,14 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	/**
 	 * Return a String representation of the color in the format
 	 *
-	 * @param   alpha   Whether to include the alpha value in the hex string
-	 * @param   usePrefix  Whether to include "0x" prefix at start of string
+	 * @param Alpha Whether to include the alpha value in the hex string
+	 * @param Prefix Whether to include "0x" prefix at start of string
 	 * @return	A string of length 10 in the format 0xAARRGGBB
 	 */
-	overload public inline extern function toHexString(alpha:Bool, usePrefix:Bool):String
+	public inline function toHexString(Alpha:Bool = true, Prefix:Bool = true):String
 	{
-		return toHexString(usePrefix ? "0x" : "", alpha);
-	}
-
-	/**
-	 * Return a String representation of the color in the format
-	 *
-	 * @param   includeAlpha  Whether to include the alpha value in the hex string
-	 * @param   prefix        Optional color prefix
-	 * @since 6.2.0
-	 */
-	overload public inline extern function toHexString(prefix:String = "0x", includeAlpha = true):String
-	{
-		inline function hex(n) return StringTools.hex(n, 2);
-		return prefix + (includeAlpha ? hex(alpha) : "") + hex(red) + hex(green) + hex(blue);
+		return (Prefix ? "0x" : "") + (Alpha ? StringTools.hex(alpha,
+			2) : "") + StringTools.hex(red, 2) + StringTools.hex(green, 2) + StringTools.hex(blue, 2);
 	}
 
 	/**
@@ -593,7 +511,7 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	 * @param	Alpha		How opaque the color should be, either between 0 and 1 or 0 and 255.
 	 * @return	This color
 	 */
-	public inline function setHSB(Hue:Float, Saturation:Float, Brightness:Float, Alpha = 1.0):FlxColor
+	public inline function setHSB(Hue:Float, Saturation:Float, Brightness:Float, Alpha:Float):FlxColor
 	{
 		var chroma = Brightness * Saturation;
 		var match = Brightness - chroma;
@@ -609,7 +527,7 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	 * @param	Alpha		How opaque the color should be, either between 0 and 1 or 0 and 255
 	 * @return	This color
 	 */
-	public inline function setHSL(Hue:Float, Saturation:Float, Lightness:Float, Alpha = 1.0):FlxColor
+	public inline function setHSL(Hue:Float, Saturation:Float, Lightness:Float, Alpha:Float):FlxColor
 	{
 		var chroma = (1 - Math.abs(2 * Lightness - 1)) * Saturation;
 		var match = Lightness - chroma / 2;
@@ -821,11 +739,6 @@ abstract FlxColor(Int) from Int from UInt to Int to UInt
 	inline function get_brightness():Float
 	{
 		return maxColor();
-	}
-
-	inline function get_luminance():Float
-	{
-		return (redFloat * 299 + greenFloat * 587 + blueFloat * 114) / 1000;
 	}
 
 	inline function get_saturation():Float
